@@ -1,0 +1,139 @@
+{
+  "name": "ENVIAR PROMOÇÕES",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "minutes",
+              "minutesInterval": 30
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.3,
+      "position": [-1888, 1072],
+      "id": "3f36029a-d3f8-46cb-9139-d72530aba839",
+      "name": "Schedule Trigger"
+    },
+    {
+      "parameters": {
+        "rules": {
+          "values": [
+            {
+              "conditions": {
+                "options": { "caseSensitive": true, "leftValue": "", "typeValidation": "strict", "version": 3 },
+                "conditions": [{ "leftValue": "={{ $json.choice }}", "rightValue": 1, "operator": { "type": "number", "operation": "equals" }, "id": "50188ba0-5e1e-4f9a-ba25-2461523af007" }],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "1- mercado livre"
+            },
+            {
+              "conditions": {
+                "options": { "caseSensitive": true, "leftValue": "", "typeValidation": "strict", "version": 3 },
+                "conditions": [{ "id": "5b9c8de8-c6cc-4867-8682-cc29e1c743f8", "leftValue": "={{ $json.choice }}", "rightValue": 2, "operator": { "type": "number", "operation": "equals" } }],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "2- amazon"
+            },
+            {
+              "conditions": {
+                "options": { "caseSensitive": true, "leftValue": "", "typeValidation": "strict", "version": 3 },
+                "conditions": [{ "id": "982f953d-8826-43ff-87b6-bb3bfd03c85d", "leftValue": "={{ $json.choice }}", "rightValue": "3", "operator": { "type": "string", "operation": "equals", "name": "filter.operator.equals" } }],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "3- shopee"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3.4,
+      "position": [-1408, 1056],
+      "id": "8d79acbe-b0cd-4791-a19e-60782e379e9d",
+      "name": "Switch"
+    },
+    {
+      "parameters": {
+        "authentication": "serviceAccount",
+        "documentId": { "__rl": true, "value": "1QnaVL8xfbT8CO0cZPLpZMKxUc3FqfGX7zSHAX3499Ow", "mode": "list", "cachedResultName": "CATEGORIAS E PRODUTOS - PLATAFORMAS" },
+        "sheetName": { "__rl": true, "value": 1660256884, "mode": "list", "cachedResultName": "Produtos ML" },
+        "filtersUI": { "values": [{ "lookupColumn": "ENVIADO", "lookupValue": "false" }] },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [-960, 416],
+      "id": "44afe699-51d6-4523-afc9-fc5efd1218f1",
+      "name": "Get row(s) in sheet",
+      "alwaysOutputData": true,
+      "credentials": { "googleApi": { "id": "DTw0Jxrxb4esOztv", "name": "Google Service Account account" } }
+    },
+    {
+      "parameters": {
+        "jsCode": "const choice = Math.floor(Math.random() * 3) + 1;\nreturn { choice }"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [-1600, 1072],
+      "id": "4cfdc819-35ee-47ab-828c-62caa2b23394",
+      "name": "1, 2 ou 3"
+    },
+    {
+      "parameters": {
+        "jsCode": "const produtos = $input.all();\nconst produtoAleatorio = produtos[Math.floor(Math.random() * produtos.length)];\nreturn produtoAleatorio;"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [-768, 416],
+      "id": "8538e3e8-9802-4fc6-bb0c-00f63cefb44d",
+      "name": "Code in JavaScript"
+    },
+    {
+      "parameters": {
+        "resource": "groups-api",
+        "operation": "fetch-groups"
+      },
+      "type": "n8n-nodes-evolution-api.evolutionApi",
+      "typeVersion": 1,
+      "position": [448, 304],
+      "id": "54852f66-4ee6-4865-bea3-f44132e3d141",
+      "name": "Buscar grupos"
+    },
+    {
+      "parameters": {
+        "resource": "messages-api",
+        "operation": "send-image",
+        "options_message": {}
+      },
+      "type": "n8n-nodes-evolution-api.evolutionApi",
+      "typeVersion": 1,
+      "position": [384, 528],
+      "id": "490e3fec-33a7-4713-b046-d955ebc067c1",
+      "name": "Enviar imagem"
+    }
+  ],
+  "_comments": {
+    "status": "Em desenvolvimento — credenciais Evolution API pendentes",
+    "group_id": "120363406286033900@g.us",
+    "spreadsheet_id": "1QnaVL8xfbT8CO0cZPLpZMKxUc3FqfGX7zSHAX3499Ow",
+    "sheet_produtos_ml_gid": "1660256884",
+    "columns_produtos_ml": ["TITULO", "IMAGEM", "LINK PRODUTO", "LINK AFILIADO", "PREÇO ATUAL", "PREÇO ANTIGO", "PROMO", "CATEGORIA", "ENVIADO"],
+    "flow": "A cada 30min → sorteia plataforma (1=ML, 2=Amazon, 3=Shopee) → busca produtos com ENVIADO=false → escolhe aleatório → verifica LINK AFILIADO → envia imagem+texto via Evolution API → marca ENVIADO=true",
+    "pending": [
+      "Adicionar credenciais Evolution API no node 'Buscar grupos' e 'Enviar imagem'",
+      "Conectar Schedule Trigger → '1, 2 ou 3' → Switch",
+      "Adicionar ID do grupo no node de envio",
+      "Adicionar credencial Google Service Account nos nodes de Amazon/Shopee"
+    ]
+  },
+  "meta": {
+    "instanceId": "6c215e66870e44a6ac4b366796a6b7adb56b74644b9a1be6248dbbfe0ca7d6f7"
+  }
+}

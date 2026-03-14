@@ -1,0 +1,26 @@
+{
+  "name": "portal-de-promos",
+  "version": "1.0.0",
+  "description": "Automação de marketing de afiliados — YouTube Shorts + WhatsApp via Evolution API",
+  "main": "src/index.js",
+  "scripts": {
+    "start": "node src/index.js",
+    "auth:youtube": "node src/auth_youtube.js",
+    "auth:drive": "node src/auth_drive.js",
+    "test:drive": "node -e \"require('./src/drive').listNewVideos().then(v => console.log('Vídeos encontrados:', v.length, v))\"",
+    "test:sheets": "node -e \"require('./src/sheets').getPendingVideos().then(v => console.log('Pendentes:', v.length, v))\"",
+    "test:whatsapp": "node -e \"require('./src/whatsapp').sendGroupMessage('Teste de conexão ✅').then(console.log)\"",
+    "test:metadata": "node -e \"const {generateMetadata}=require('./src/claude');console.log(generateMetadata({nome:'Fritadeira Air Fryer',preco:'R$ 199,90',preco_antigo:'R$ 289,90',categoria:'Casa/Cozinha'}))\""
+  },
+  "dependencies": {
+    "axios": "^1.7.0",
+    "cheerio": "^1.2.0",
+    "dotenv": "^16.0.0",
+    "express": "^4.18.0",
+    "googleapis": "^144.0.0",
+    "node-cron": "^3.0.0"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}

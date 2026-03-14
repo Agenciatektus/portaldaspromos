@@ -1,0 +1,6 @@
+.env
+node_modules/
+credenciais/
+logs/
+*.mp4
+*.mov

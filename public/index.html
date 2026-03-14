@@ -1,0 +1,338 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Portal de Promos</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      background: #0f172a;
+      color: #e2e8f0;
+      min-height: 100vh;
+      display: flex;
+      align-items: flex-start;
+      justify-content: center;
+      padding: 2rem 1rem;
+    }
+    .card {
+      background: #1e293b;
+      border-radius: 12px;
+      padding: 2rem;
+      width: 100%;
+      max-width: 560px;
+      box-shadow: 0 4px 24px rgba(0,0,0,0.4);
+    }
+    h1 {
+      font-size: 1.4rem;
+      font-weight: 700;
+      color: #f8fafc;
+      margin-bottom: 0.25rem;
+    }
+    .subtitle {
+      font-size: 0.85rem;
+      color: #94a3b8;
+      margin-bottom: 1.75rem;
+    }
+    .form-group { margin-bottom: 1.1rem; }
+    label {
+      display: block;
+      font-size: 0.8rem;
+      font-weight: 600;
+      color: #94a3b8;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      margin-bottom: 0.35rem;
+    }
+    textarea {
+      width: 100%;
+      padding: 0.65rem 0.85rem;
+      border-radius: 8px;
+      border: 1px solid #334155;
+      background: #0f172a;
+      color: #e2e8f0;
+      font-size: 0.9rem;
+      font-family: inherit;
+      outline: none;
+      resize: vertical;
+      transition: border-color 0.2s;
+    }
+    textarea:focus { border-color: #6366f1; }
+    textarea::placeholder { color: #475569; }
+    input, select {
+      width: 100%;
+      padding: 0.65rem 0.85rem;
+      border-radius: 8px;
+      border: 1px solid #334155;
+      background: #0f172a;
+      color: #e2e8f0;
+      font-size: 0.95rem;
+      outline: none;
+      transition: border-color 0.2s;
+    }
+    input:focus, select:focus { border-color: #6366f1; }
+    input::placeholder { color: #475569; }
+    .row { display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem; }
+    .plataforma-badge {
+      display: inline-block;
+      font-size: 0.75rem;
+      font-weight: 600;
+      padding: 0.2rem 0.6rem;
+      border-radius: 99px;
+      margin-left: 0.5rem;
+      vertical-align: middle;
+    }
+    .badge-ml   { background: #fef3c7; color: #92400e; }
+    .badge-amz  { background: #fde68a; color: #78350f; }
+    .badge-sho  { background: #fee2e2; color: #991b1b; }
+    .badge-none { background: #1e293b; color: #64748b; border: 1px solid #334155; }
+    .hint {
+      font-size: 0.75rem;
+      color: #64748b;
+      margin-top: 0.3rem;
+    }
+
+    #dadosProduto {
+      display: none;
+      border-top: 1px solid #334155;
+      margin-top: 1.25rem;
+      padding-top: 1.25rem;
+    }
+    #dadosProduto.visivel { display: block; }
+
+    /* Estado de carregamento do scrape */
+    #scrapeStatus {
+      font-size: 0.8rem;
+      margin-top: 0.4rem;
+      min-height: 1.2em;
+    }
+    #scrapeStatus.loading { color: #94a3b8; }
+    #scrapeStatus.ok      { color: #4ade80; }
+    #scrapeStatus.erro    { color: #f87171; }
+
+    button[type="submit"] {
+      width: 100%;
+      padding: 0.85rem;
+      background: #6366f1;
+      color: #fff;
+      font-size: 1rem;
+      font-weight: 700;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+      margin-top: 0.5rem;
+      transition: background 0.2s, opacity 0.2s;
+    }
+    button[type="submit"]:hover { background: #4f46e5; }
+    button[type="submit"]:disabled { opacity: 0.5; cursor: not-allowed; }
+    #mensagem {
+      margin-top: 1rem;
+      padding: 0.75rem 1rem;
+      border-radius: 8px;
+      font-size: 0.9rem;
+      display: none;
+    }
+    #mensagem.success { background: #14532d; color: #86efac; display: block; }
+    #mensagem.error   { background: #450a0a; color: #fca5a5; display: block; }
+  </style>
+</head>
+<body>
+<div class="card">
+  <h1>Portal de Promos</h1>
+  <p class="subtitle">Adicione um vídeo à fila de publicação</p>
+
+  <form id="form">
+    <div class="form-group">
+      <label>Link do Drive (vídeo MP4)</label>
+      <input type="url" id="driveLink" placeholder="https://drive.google.com/file/d/.../view" required />
+      <p class="hint">Cole o link de compartilhamento do arquivo MP4 no Google Drive</p>
+    </div>
+
+    <div class="form-group">
+      <label>
+        Link do Produto
+        <span id="plataformaBadge" class="plataforma-badge badge-none">—</span>
+      </label>
+      <input type="url" id="produtoLink" placeholder="https://www.mercadolivre.com.br/..." required />
+      <p id="scrapeStatus" class="hint">Mercado Livre, Amazon ou Shopee — dados serão buscados automaticamente</p>
+    </div>
+
+    <!-- Campos ocultos até o scrape retornar os dados -->
+    <div id="dadosProduto">
+      <div class="form-group">
+        <label>Nome do Produto</label>
+        <input type="text" id="titulo" placeholder="ex: Fritadeira Air Fryer 4L" required />
+      </div>
+
+      <div class="row">
+        <div class="form-group">
+          <label>Preço Atual</label>
+          <input type="text" id="preco" placeholder="ex: R$ 189,90" required />
+        </div>
+        <div class="form-group">
+          <label>Preço Antigo <span style="color:#475569;font-weight:400">(opcional)</span></label>
+          <input type="text" id="precoAntigo" placeholder="ex: R$ 289,90" />
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label>Categoria</label>
+        <select id="categoria">
+          <option value="">— Selecione —</option>
+          <option>Casa/Cozinha</option>
+          <option>Eletrônicos</option>
+          <option>Moda</option>
+          <option>Beleza/Saúde</option>
+          <option>Esportes</option>
+          <option>Informática</option>
+          <option>Bebês/Crianças</option>
+          <option>Ferramentas</option>
+          <option>Outros</option>
+        </select>
+      </div>
+
+      <div class="form-group">
+        <label>Descrição <span style="color:#475569;font-weight:400">(opcional — SEO)</span></label>
+        <textarea id="descricao" rows="4" placeholder="Descrição do produto para SEO..."></textarea>
+      </div>
+
+      <button type="submit" id="btn">Adicionar à Fila</button>
+    </div>
+
+    <div id="mensagem"></div>
+  </form>
+</div>
+
+<script>
+  const produtoInput = document.getElementById('produtoLink');
+  const badge        = document.getElementById('plataformaBadge');
+  const status       = document.getElementById('scrapeStatus');
+  const dadosDiv     = document.getElementById('dadosProduto');
+  let scrapeTimer    = null;
+
+  function detectarPlataforma(url) {
+    if (/mercadolivre\.com|mercadolibre\.com/i.test(url)) return 'mercadolivre';
+    if (/amazon\.com\.br|amzn\.to/i.test(url)) return 'amazon';
+    if (/shopee\.com|shp\.ee/i.test(url)) return 'shopee';
+    return null;
+  }
+
+  function atualizarBadge(plataforma) {
+    const labels  = { mercadolivre: 'Mercado Livre', amazon: 'Amazon', shopee: 'Shopee' };
+    const classes = { mercadolivre: 'badge-ml', amazon: 'badge-amz', shopee: 'badge-sho' };
+    badge.textContent = plataforma ? labels[plataforma] : '—';
+    badge.className   = 'plataforma-badge ' + (plataforma ? classes[plataforma] : 'badge-none');
+  }
+
+  function mostrarDados(dados) {
+    document.getElementById('titulo').value      = dados.titulo      || '';
+    document.getElementById('preco').value       = dados.preco       || '';
+    document.getElementById('precoAntigo').value = dados.precoAntigo || '';
+    if (dados.categoria) {
+      const sel = document.getElementById('categoria');
+      const opt = Array.from(sel.options).find(o => o.value === dados.categoria);
+      if (opt) {
+        sel.value = dados.categoria;
+      } else {
+        const newOpt = document.createElement('option');
+        newOpt.value = dados.categoria;
+        newOpt.textContent = dados.categoria;
+        sel.appendChild(newOpt);
+        sel.value = dados.categoria;
+      }
+    }
+    document.getElementById('descricao').value   = dados.descricao  || '';
+    dadosDiv.classList.add('visivel');
+  }
+
+  function ocultarDados() {
+    dadosDiv.classList.remove('visivel');
+    document.getElementById('titulo').value      = '';
+    document.getElementById('preco').value       = '';
+    document.getElementById('precoAntigo').value = '';
+    document.getElementById('categoria').value   = '';
+    document.getElementById('descricao').value   = '';
+  }
+
+  produtoInput.addEventListener('input', () => {
+    const url        = produtoInput.value.trim();
+    const plataforma = detectarPlataforma(url);
+    atualizarBadge(plataforma);
+    clearTimeout(scrapeTimer);
+    ocultarDados();
+
+    if (!plataforma || !url) {
+      status.textContent = 'Mercado Livre, Amazon ou Shopee — dados serão buscados automaticamente';
+      status.className = 'hint';
+      return;
+    }
+
+    status.textContent = 'Buscando dados do produto...';
+    status.className = 'hint loading';
+
+    scrapeTimer = setTimeout(async () => {
+      try {
+        const res = await fetch('/api/scrape?url=' + encodeURIComponent(url));
+        if (!res.ok) throw new Error('Falha ao buscar produto');
+        const dados = await res.json();
+        mostrarDados(dados);
+        status.textContent = '✓ Dados carregados — revise e confirme';
+        status.className = 'hint ok';
+      } catch (err) {
+        status.textContent = 'Não foi possível buscar automaticamente — preencha manualmente';
+        status.className = 'hint erro';
+        mostrarDados({ titulo: '', preco: '', precoAntigo: '', categoria: '' });
+      }
+    }, 800);
+  });
+
+  document.getElementById('form').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const btn = document.getElementById('btn');
+    const msg = document.getElementById('mensagem');
+    btn.disabled = true;
+    btn.textContent = 'Enviando...';
+    msg.className = '';
+    msg.style.display = 'none';
+
+    const body = {
+      driveLink:   document.getElementById('driveLink').value.trim(),
+      produtoLink: document.getElementById('produtoLink').value.trim(),
+      titulo:      document.getElementById('titulo').value.trim(),
+      preco:       document.getElementById('preco').value.trim(),
+      precoAntigo: document.getElementById('precoAntigo').value.trim(),
+      descricao:   document.getElementById('descricao').value.trim(),
+      categoria:   document.getElementById('categoria').value,
+    };
+
+    try {
+      const res  = await fetch('/api/publicar', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body),
+      });
+      const data = await res.json();
+      if (res.ok && data.success) {
+        msg.textContent = `✅ ${data.mensagem} — ${data.dados.titulo}`;
+        msg.className = 'success';
+        e.target.reset();
+        ocultarDados();
+        atualizarBadge(null);
+        status.textContent = 'Mercado Livre, Amazon ou Shopee — dados serão buscados automaticamente';
+        status.className = 'hint';
+      } else {
+        msg.textContent = `❌ ${data.error || 'Erro desconhecido'}`;
+        msg.className = 'error';
+      }
+    } catch (err) {
+      msg.textContent = '❌ Falha na conexão com o servidor';
+      msg.className = 'error';
+    } finally {
+      btn.disabled = false;
+      btn.textContent = 'Adicionar à Fila';
+    }
+  });
+</script>
+</body>
+</html>

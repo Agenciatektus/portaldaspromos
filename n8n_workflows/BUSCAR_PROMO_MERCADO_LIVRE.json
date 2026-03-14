@@ -1,0 +1,257 @@
+{
+  "name": "BUSCAR PROMO MERCADO LIVRE",
+  "_comments": {
+    "status": "ATIVO ✅ — rodando em produção",
+    "trigger": "Schedule às 6h diariamente (Schedule Trigger)",
+    "cleanup_trigger": "Schedule Trigger1 — limpeza no fim do dia (horário não configurado)",
+    "flow": "Lê categorias 'Cat ML' (STATUS=Ativo) → loop por categoria → scrape ML → pega 15 produtos → gera link afiliado ML → append na aba 'Produtos ML'",
+    "affiliate_tag": "agencia_tektus",
+    "spreadsheet_id": "1QnaVL8xfbT8CO0cZPLpZMKxUc3FqfGX7zSHAX3499Ow",
+    "sheet_cat_ml_gid": "gid=0",
+    "sheet_produtos_ml_gid": "1660256884",
+    "cat_ml_columns": ["LINK (URL da categoria no ML)", "STATUS (Ativo/Inativo)", "CATEGORIAS (nome)"],
+    "cookies_warning": "O cookie do ML expira a cada 2-4 semanas. Renovar manualmente em: node 'Edit Fields' → campo 'cookie'. Extrair do DevTools ao navegar no ML logado.",
+    "affiliate_api": "POST https://www.mercadolivre.com.br/affiliate-program/api/v2/affiliates/createLink — retorna urls[0].short_url",
+    "css_selectors": {
+      "titulo": ".andes-card.poly-card .poly-component__title",
+      "link": ".andes-card.poly-card .poly-component__title [href]",
+      "imagem": "img.poly-component__picture [src]",
+      "preco_atual": ".andes-card.poly-card .poly-price__current .andes-money-amount",
+      "preco_antigo": ".andes-card.poly-card s.andes-money-amount--previous"
+    },
+    "pending": [
+      "Configurar horário do Schedule Trigger1 (limpeza diária)",
+      "Renovar cookie quando short_url vier vazio"
+    ]
+  },
+  "nodes": [
+    {
+      "parameters": {
+        "rule": { "interval": [{ "triggerAtHour": 6 }] }
+      },
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.3,
+      "position": [-208, 288],
+      "id": "d2c2b967-6bc0-40e5-994e-2e8ec1373979",
+      "name": "Schedule Trigger"
+    },
+    {
+      "parameters": {
+        "rule": { "interval": [{}] }
+      },
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.3,
+      "position": [-208, 640],
+      "id": "8033b3f9-16f4-4020-adb3-f1d539021acd",
+      "name": "Schedule Trigger1 (limpeza fim do dia — configurar horário)"
+    },
+    {
+      "parameters": {
+        "authentication": "serviceAccount",
+        "documentId": { "__rl": true, "value": "1QnaVL8xfbT8CO0cZPLpZMKxUc3FqfGX7zSHAX3499Ow", "mode": "list", "cachedResultName": "CATEGORIAS E PRODUTOS - PLATAFORMAS" },
+        "sheetName": { "__rl": true, "value": "gid=0", "mode": "list", "cachedResultName": "Cat ML" },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [16, 288],
+      "id": "79871c65-62de-421b-9257-3326d4e8efee",
+      "name": "Get row(s) in sheet (Cat ML)",
+      "credentials": { "googleApi": { "id": "DTw0Jxrxb4esOztv", "name": "Google Service Account account" } }
+    },
+    {
+      "parameters": { "options": {} },
+      "type": "n8n-nodes-base.splitInBatches",
+      "typeVersion": 3,
+      "position": [240, 288],
+      "id": "d369e5da-079b-45e7-a4f6-a05ffe554da7",
+      "name": "Loop Over Items"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": { "caseSensitive": true, "leftValue": "", "typeValidation": "strict", "version": 3 },
+          "conditions": [{ "id": "2a6930b2-eb9f-4cd7-aa0e-60e376c72ad5", "leftValue": "={{ $json.STATUS }}", "rightValue": "Ativo", "operator": { "type": "string", "operation": "equals" } }],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.filter",
+      "typeVersion": 2.3,
+      "position": [464, 304],
+      "id": "07f34651-763a-47c1-9505-386f63dd2653",
+      "name": "Filter (STATUS=Ativo)"
+    },
+    {
+      "parameters": {
+        "url": "={{ $json.LINK }}",
+        "sendQuery": true,
+        "queryParameters": { "parameters": [{ "name": "page", "value": "1" }] },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.3,
+      "position": [656, 304],
+      "id": "2c3a5548-9aa8-4bea-a7b6-3ce087a7fb73",
+      "name": "HTTP Request (scrape ML)"
+    },
+    {
+      "parameters": {
+        "operation": "extractHtmlContent",
+        "extractionValues": {
+          "values": [
+            { "key": "titulo", "cssSelector": ".andes-card.poly-card .poly-component__title", "returnArray": true },
+            { "key": "link", "cssSelector": ".andes-card.poly-card .poly-component__title", "returnValue": "attribute", "attribute": "href", "returnArray": true },
+            { "key": "imagem", "cssSelector": "img.poly-component__picture", "returnValue": "attribute", "attribute": "src", "returnArray": true },
+            { "key": "promo", "cssSelector": ".andes-card.poly-card .poly-price__current", "returnArray": true },
+            { "key": "preco_atual", "cssSelector": ".andes-card.poly-card .poly-price__current .andes-money-amount", "returnArray": true },
+            { "key": "preco_antigo", "cssSelector": ".andes-card.poly-card s.andes-money-amount--previous", "returnArray": true }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.html",
+      "typeVersion": 1.2,
+      "position": [848, 304],
+      "id": "a5e0bf21-5cf1-48b1-86ed-71f89547afd1",
+      "name": "HTML1 (extrai dados do produto)"
+    },
+    {
+      "parameters": {
+        "fieldToSplitOut": "titulo, link, imagem, promo, preco_atual, preco_antigo",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.splitOut",
+      "typeVersion": 1,
+      "position": [1056, 304],
+      "id": "f4d93805-6987-41b4-b18f-88dcd208bd06",
+      "name": "Split Out"
+    },
+    {
+      "parameters": {
+        "jsCode": "const produtos = $input.all().slice(0,15)\nreturn produtos;"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1248, 304],
+      "id": "e249ec42-8b05-48df-a814-df35de866214",
+      "name": "Code (limita 15 produtos por categoria)"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            { "id": "a12c51b1", "name": "tag_afiliado", "value": "agencia_tektus", "type": "string" },
+            { "id": "8f82883f", "name": "cookie", "value": "RENOVAR_MANUALMENTE_A_CADA_2_4_SEMANAS", "type": "string" }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [1456, 304],
+      "id": "239e1ebe-bb2d-4e5a-bd6f-b7ed4bbb8631",
+      "name": "Edit Fields (cookie + tag afiliado)"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://www.mercadolivre.com.br/affiliate-program/api/v2/affiliates/createLink",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            { "name": "Cookie", "value": "={{ $json.cookie }}" },
+            { "name": "Origin", "value": "https://www.mercadolivre.com.br" },
+            { "name": "Referer", "value": "https://www.mercadolivre.com.br/afiliados/linkbuilder" },
+            { "name": "User-Agent", "value": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36" },
+            { "name": "Content-Type", "value": "application/json" }
+          ]
+        },
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            { "name": "urls", "value": "={{ [$('Code (limita 15 produtos por categoria)').item.json.link] }}" },
+            { "name": "tag", "value": "={{ $json.tag_afiliado }}" }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "id": "87399424-58fa-48b6-82c5-252c419b7de3",
+      "name": "Gerar Link Afiliado (retorna urls[0].short_url)",
+      "typeVersion": 4.1,
+      "position": [1648, 304]
+    },
+    {
+      "parameters": {
+        "authentication": "serviceAccount",
+        "operation": "append",
+        "documentId": { "__rl": true, "value": "1QnaVL8xfbT8CO0cZPLpZMKxUc3FqfGX7zSHAX3499Ow", "mode": "list", "cachedResultName": "CATEGORIAS E PRODUTOS - PLATAFORMAS" },
+        "sheetName": { "__rl": true, "value": 1660256884, "mode": "list", "cachedResultName": "Produtos ML" },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "LINK AFILIADO": "={{ $json.urls[0].short_url }}",
+            "IMAGEM": "={{ $('Code (limita 15 produtos por categoria)').item.json.imagem }}",
+            "TITULO": "={{ $('Code (limita 15 produtos por categoria)').item.json.titulo }}",
+            "PREÇO ATUAL": "={{ $('Code (limita 15 produtos por categoria)').item.json.preco_atual }}",
+            "PREÇO ANTIGO": "={{ $('Code (limita 15 produtos por categoria)').item.json.preco_antigo }}",
+            "PROMO": "={{ $('Code (limita 15 produtos por categoria)').item.json.promo }}",
+            "ENVIADO": "FALSE",
+            "CATEGORIA": "={{ $('Loop Over Items').item.json.CATEGORIAS }}",
+            "LINK PRODUTO": "={{ $('Code (limita 15 produtos por categoria)').item.json.link }}"
+          }
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [1856, 304],
+      "id": "798a51ce-02f4-4f98-a5ab-1d2f24ae9067",
+      "name": "Append row in sheet1 (grava em Produtos ML)",
+      "credentials": { "googleApi": { "id": "DTw0Jxrxb4esOztv", "name": "Google Service Account account" } }
+    },
+    {
+      "parameters": { "amount": 2 },
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1.1,
+      "position": [2064, 304],
+      "id": "500891ed-05cf-4c2e-8eab-f6cc4754f519",
+      "name": "Wait 2s (evitar rate limit)"
+    },
+    {
+      "parameters": {
+        "authentication": "serviceAccount",
+        "operation": "clear",
+        "documentId": { "__rl": true, "value": "1QnaVL8xfbT8CO0cZPLpZMKxUc3FqfGX7zSHAX3499Ow", "mode": "list" },
+        "sheetName": { "__rl": true, "value": 1660256884, "mode": "list", "cachedResultName": "Produtos ML" }
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [0, 640],
+      "id": "b2990d32-56fd-4181-9bc2-3ed96de03064",
+      "name": "Clear sheet (limpeza diária)",
+      "credentials": { "googleApi": { "id": "DTw0Jxrxb4esOztv", "name": "Google Service Account account" } }
+    }
+  ],
+  "connections": {
+    "Schedule Trigger": { "main": [[{ "node": "Get row(s) in sheet (Cat ML)", "type": "main", "index": 0 }]] },
+    "Schedule Trigger1 (limpeza fim do dia — configurar horário)": { "main": [[{ "node": "Clear sheet (limpeza diária)", "type": "main", "index": 0 }]] },
+    "Get row(s) in sheet (Cat ML)": { "main": [[{ "node": "Loop Over Items", "type": "main", "index": 0 }]] },
+    "Loop Over Items": { "main": [[], [{ "node": "Filter (STATUS=Ativo)", "type": "main", "index": 0 }]] },
+    "Filter (STATUS=Ativo)": { "main": [[{ "node": "HTTP Request (scrape ML)", "type": "main", "index": 0 }]] },
+    "HTTP Request (scrape ML)": { "main": [[{ "node": "HTML1 (extrai dados do produto)", "type": "main", "index": 0 }]] },
+    "HTML1 (extrai dados do produto)": { "main": [[{ "node": "Split Out", "type": "main", "index": 0 }]] },
+    "Split Out": { "main": [[{ "node": "Code (limita 15 produtos por categoria)", "type": "main", "index": 0 }]] },
+    "Code (limita 15 produtos por categoria)": { "main": [[{ "node": "Edit Fields (cookie + tag afiliado)", "type": "main", "index": 0 }]] },
+    "Edit Fields (cookie + tag afiliado)": { "main": [[{ "node": "Gerar Link Afiliado (retorna urls[0].short_url)", "type": "main", "index": 0 }]] },
+    "Gerar Link Afiliado (retorna urls[0].short_url)": { "main": [[{ "node": "Append row in sheet1 (grava em Produtos ML)", "type": "main", "index": 0 }]] },
+    "Append row in sheet1 (grava em Produtos ML)": { "main": [[{ "node": "Wait 2s (evitar rate limit)", "type": "main", "index": 0 }]] },
+    "Wait 2s (evitar rate limit)": { "main": [[{ "node": "Loop Over Items", "type": "main", "index": 0 }]] }
+  },
+  "active": true,
+  "meta": {
+    "instanceId": "6c215e66870e44a6ac4b366796a6b7adb56b74644b9a1be6248dbbfe0ca7d6f7"
+  },
+  "id": "lpTQKf1FrIyOqrNcUbAus"
+}
