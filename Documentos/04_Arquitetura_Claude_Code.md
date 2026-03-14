@@ -1,158 +1,181 @@
-# 04 — Arquitetura do Claude Code (Automação de Publicação)
+# 04 — Arquitetura do Portal de Promos (Implementação Real)
 
-## Objetivo
+## Stack
 
-Monitorar a pasta "Aguardando Publicação" no Google Drive,
-processar vídeos automaticamente e publicar no YouTube + WhatsApp.
-
----
-
-## Fluxo de Publicação
-
-```
-[Cron: a cada 30 min]
-       ↓
-drive.js: listar arquivos em DRIVE_FOLDER_AGUARDANDO
-       ↓ (se encontrar novos .mp4)
-sheets.js: extrair linha do nome do arquivo → buscar produto na planilha
-       ↓
-claude.js: gerar título, descrição, hashtags com base no produto
-       ↓
-drive.js: baixar arquivo .mp4 para pasta temporária local
-       ↓
-youtube.js: upload como YouTube Short com os metadados gerados
-       ↓
-whatsapp.js: enviar mensagem formatada no grupo
-       ↓
-sheets.js: marcar ENVIADO=TRUE, inserir URL YouTube, data
-       ↓
-drive.js: mover .mp4 para DRIVE_FOLDER_PUBLICADOS
-       ↓
-logs: registrar publicação em logs/publicacoes.json
-```
+| Componente | Tecnologia |
+|------------|------------|
+| Runtime | Node.js ≥ 18 |
+| Web server | Express 4 |
+| Scraping | axios + cheerio |
+| Auth Google | OAuth 2.0 + googleapis |
+| Metadados YouTube | Template local (sem Claude API) |
+| WhatsApp | Evolution API (sendMedia base64) |
+| Agendamento | node-cron (padrão: 30 min) |
+| Config | .env + dotenv |
 
 ---
 
-## Convenção de Nome dos Arquivos de Vídeo
+## Estrutura de Arquivos
 
-**Formato obrigatório:**
 ```
-{LINHA_PLANILHA}_{slug-do-produto}.mp4
+Portal de Promos/
+├── src/
+│   ├── index.js          ← Ponto de entrada: inicia server + cron
+│   ├── server.js         ← Express: GET /api/scrape, POST /api/publicar
+│   ├── scraper.js        ← Scraping ML / Amazon / Shopee
+│   ├── affiliate.js      ← Geração de link afiliado por plataforma
+│   ├── sheets.js         ← Leitura e escrita na aba Vídeos
+│   ├── drive.js          ← Download, rename, move no Google Drive
+│   ├── youtube.js        ← Upload YouTube Shorts + OAuth
+│   ├── claude.js         ← Geração de metadados via template local
+│   ├── whatsapp.js       ← Envio de vídeo + mensagem no grupo
+│   ├── auth_youtube.js   ← Script one-time: gera YOUTUBE_REFRESH_TOKEN
+│   └── auth_drive.js     ← Script one-time: gera DRIVE_REFRESH_TOKEN
+├── public/
+│   └── index.html        ← Portal web de adição à fila
+├── credenciais/          ← NÃO versionar (google_credentials.json, tokens)
+├── logs/
+│   └── app.log           ← Log de texto com timestamp (append)
+├── n8n_workflows/        ← Fluxos n8n exportados (ML, Shopee)
+├── .env                  ← Variáveis de ambiente (NUNCA versionar)
+├── .env.example          ← Template público com todas as vars
+├── Dockerfile
+└── package.json
 ```
 
-O número é a linha na aba **Produtos ML** da planilha.
+---
+
+## Fluxo do Portal Web (adicionar à fila)
+
+```
+Usuário cola Link do Drive + Link do Produto
+       ↓
+GET /api/scrape?url=...
+       ↓
+scraper.js: detecta plataforma → scrape de título, preço, categoria, descrição
+       ↓
+Frontend: preenche formulário automaticamente
+       ↓
+Usuário revisa e submete → POST /api/publicar
+       ↓
+server.js: gerarNomeArquivo(titulo, plataforma) → "fritadeira-air-fryer-shopee-2026-03-14.mp4"
+       ↓
+affiliate.js: gerarLink(plataforma, url) → link afiliado (ou "" se não configurado)
+       ↓
+sheets.js: inserirNaFila → append linha na aba Vídeos com STATUS=Pendente
+```
+
+---
+
+## Fluxo do Cron (publicação automática)
+
+```
+[node-cron: a cada CRON_INTERVAL_MINUTES (padrão 30)]
+       ↓
+sheets.js: getPendingVideos() → busca linhas com STATUS="Pendente" na aba Vídeos
+       ↓ (para cada pendente)
+index.js: extrairFileId(entry.linkDrive) → extrai fileId do link Google Drive
+       ↓
+claude.js: generateMetadata(produto) → título, descrição, hashtags (template local)
+       ↓
+drive.js: downloadVideo(fileId, localPath) → baixa MP4 para /tmp/portal-de-promos/
+       ↓
+youtube.js: uploadShort(localPath, metadata) → retorna URL do Short
+       ↓
+whatsapp.js: notifyNewShort({ videoPath, nomeProduto, preco, precoAntigo, desconto, linkAfiliado })
+             → envia vídeo com legenda aleatória (750+ combinações) via Evolution API
+       ↓
+sheets.js: markAsPublished(rowIndex, youtubeUrl, tituloYoutube)
+       ↓
+drive.js: renameFile(fileId, nomeArquivo) → renomeia para "slug-plataforma-data.mp4"
+drive.js: moveToPublished(fileId) → move para pasta Videos Publicados
+       ↓
+fs.unlinkSync(localPath) → deleta arquivo temporário
+```
+
+---
+
+## Aba "Vídeos" na Planilha — Colunas A:N
+
+| Col | Nome | Descrição |
+|-----|------|-----------|
+| A | NOME_ARQUIVO | `{slug}-{plataforma}-{data}.mp4` gerado pelo servidor |
+| B | LINK_DRIVE | URL completa do arquivo no Google Drive |
+| C | LINK_PRODUTO | URL original do produto (ML/Amazon/Shopee) |
+| D | TITULO_PRODUTO | Título scrapeado |
+| E | PRECO | Preço atual (ex: "R$ 189,90") |
+| F | PRECO_ANTIGO | Preço antigo (ex: "R$ 289,90") — vazio se não disponível |
+| G | LINK_AFILIADO | Link afiliado gerado — vazio se credenciais não configuradas |
+| H | PLATAFORMA | `mercadolivre`, `amazon` ou `shopee` |
+| I | CATEGORIA | Categoria real da plataforma (ou mapeada) |
+| J | STATUS | `Pendente` → `Postado` ou `Erro` |
+| K | LINK_YOUTUBE | URL do Short após publicação |
+| L | DATA_PUBLICACAO | Timestamp da publicação (horário Brasília) |
+| M | TITULO_YOUTUBE | Título gerado para o YouTube |
+| N | DESCRICAO | Descrição do produto (SEO) |
+
+---
+
+## Convenção de Nome do Arquivo de Vídeo
+
+**Gerado automaticamente pelo servidor** a partir do título do produto:
+
+```
+{slug-do-titulo}-{plataforma}-{data-iso}.mp4
+```
 
 **Exemplos:**
 ```
-2_fone-bluetooth-jbl.mp4          → linha 2 da aba Produtos ML
-7_fritadeira-air-fryer-mondial.mp4 → linha 7 da aba Produtos ML
-15_tenis-nike-revolution.mp4       → linha 15 da aba Produtos ML
+fritadeira-air-fryer-mondial-4l-shopee-2026-03-14.mp4
+fone-bluetooth-jbl-tune-510bt-mercadolivre-2026-03-14.mp4
+tenis-nike-revolution-6-amazon-2026-03-14.mp4
 ```
 
-O Claude Code extrai o número, busca a linha na planilha
-e usa todos os dados (título, preço, link afiliado, categoria).
+O arquivo é renomeado no Drive para este padrão **após** a publicação bem-sucedida.
 
 ---
 
-## Estrutura de Arquivos do Projeto
+## Geração de Link Afiliado
 
-```
-canal-ofertas-claude/
-├── index.js              ← Ponto de entrada + scheduler (node-cron)
-├── drive.js              ← listarArquivos(), baixarVideo(), moverArquivo()
-├── sheets.js             ← buscarProduto(linha), marcarEnviado(linha, youtubeUrl)
-├── claude.js             ← gerarMetadados(produto) → título, descrição, hashtags
-├── youtube.js            ← uploadShort(arquivo, metadados) → youtubeUrl
-├── whatsapp.js           ← enviarMensagem(produto, youtubeUrl)
-├── .env                  ← Variáveis de ambiente (NUNCA versionar no git)
-├── credentials.json      ← JSON do Service Account Google
-├── package.json
-└── logs/
-    └── publicacoes.json  ← Histórico de publicações
-```
+| Plataforma | Método | Credencial necessária |
+|------------|--------|-----------------------|
+| Mercado Livre | POST `/affiliate-program/api/v2/affiliates/createLink` | `ML_AFFILIATE_COOKIE` |
+| Amazon | GET SiteStripe `/associates/sitestripe/getShortUrl` | `AMAZON_AFFILIATE_COOKIE` |
+| Shopee | GraphQL `productOfferV2` com HMAC-SHA256 | `SHOPEE_APP_ID` + `SHOPEE_SECRET` |
+
+Se a credencial não estiver configurada, retorna `""` (campo vazio na planilha) — **nunca usa a URL original como afiliado**.
 
 ---
 
-## Stack Técnica
+## Mensagem WhatsApp — Variações Aleatórias
 
-| Componente | Tecnologia | Motivo |
-|------------|------------|--------|
-| Runtime | Node.js | Mesma stack do projeto anterior com Drive |
-| Orquestrador | Claude Code | Executa scripts, monitora Drive, toma decisões |
-| Auth Google | OAuth 2.0 + googleapis | Drive + Sheets + YouTube na mesma credencial |
-| IA para metadados | Claude API (claude-sonnet-4) | Geração de títulos/descrições |
-| Publicação Instagram | Instagram Graph API | Fase 3 |
-| Grupo WhatsApp | Evolution API (inicial) | Mais rápido de configurar |
-| Agendamento | node-cron | Polling a cada 30 minutos |
-| Config | .env + dotenv | Segurança das credenciais |
+A mensagem é composta por 4 blocos sorteados aleatoriamente a cada envio:
 
----
+| Bloco | Opções | Exemplo |
+|-------|--------|---------|
+| Cabeçalho | 6 | `🚨 *ALERTA DE PROMOÇÃO!* 🚨` |
+| Preço (com desconto) | 5 | `😱 33% de desconto?! Tá de brincadeira!` |
+| Preço (sem desconto) | 5 | `💸 Por apenas R$ 189,90` |
+| CTA (com link afiliado) | 5 | `🛒 Garanta antes que acabe...` |
+| Encerramento | 5 | `⚡ Corre que oferta não espera!` |
 
-## Prompt da IA (claude.js) — Template
-
-```javascript
-const prompt = `
-Você é um especialista em marketing de ofertas.
-Crie os metadados para um YouTube Short sobre esta oferta:
-
-Produto: ${produto.TITULO}
-Preço atual: ${produto['PREÇO ATUAL']}
-Preço antigo: ${produto['PREÇO ANTIGO']}
-Categoria: ${produto.CATEGORIA}
-Link afiliado: ${produto['LINK AFILIADO']}
-
-Regras:
-- Título: máximo 100 caracteres, com emoji, destaque o desconto
-- Descrição: máximo 500 caracteres, CTA claro, link afiliado, hashtags
-- Tags: 10 a 15 tags relevantes separadas por vírgula
-
-Retorne APENAS JSON válido:
-{
-  "titulo": "...",
-  "descricao": "...",
-  "tags": ["...", "..."]
-}
-`;
-```
+**Total de combinações:** 6 × 5 × 5 × 5 = **750 variações**
 
 ---
 
-## Abas a Criar na Planilha
+## Plataformas Suportadas
 
-### Aba: VIDEOS
-
-| Coluna | Conteúdo |
-|--------|----------|
-| ID | Número sequencial |
-| ARQUIVO_DRIVE | Nome do arquivo (ex: 7_fritadeira.mp4) |
-| LINHA_PRODUTO | Linha na aba Produtos ML |
-| DATA_PUBLICACAO | Quando foi publicado |
-| STATUS | Pendente / Publicado / Erro |
-| URL_YOUTUBE | Link do vídeo publicado |
-| URL_INSTAGRAM | Link do Reel (Fase 3) |
-
-### Aba: REGRAS_CONTEUDO
-
-| Coluna | Conteúdo |
-|--------|----------|
-| CATEGORIA | Nome da categoria |
-| TEMPLATE_TITULO | Template com variáveis {PRODUTO}, {DESC}, {PRECO} |
-| TEMPLATE_DESCRICAO | Template da descrição |
-| HASHTAGS_FIXAS | Hashtags sempre incluídas |
+| Plataforma | Scraping | Afiliado | Categoria |
+|------------|----------|----------|-----------|
+| Mercado Livre | ✅ cheerio | ✅ cookie API | Mapeada do breadcrumb |
+| Amazon | ✅ cheerio | ✅ SiteStripe | Mapeada do breadcrumb |
+| Shopee | ✅ JSON-LD (Googlebot UA) | ✅ GraphQL API | Real (do JSON-LD) |
 
 ---
 
-## WhatsApp — Opções de Integração
+## WhatsApp — Evolution API
 
-### Opção 1: Evolution API (recomendada para início)
-- Self-hosted, conecta via QR code
-- Funciona com grupos normais do WhatsApp
-- Sem aprovação, sem número dedicado
-- Risco: instabilidades, contra ToS do WhatsApp
-- **Bom para testar e validar**
-
-### Opção 2: WhatsApp Business Cloud API (Meta)
-- Requer número dedicado e aprovação (1-3 dias)
-- Templates pré-aprovados obrigatórios
-- Mais estável e oficial
-- **Migrar para esta depois que o canal crescer**
+- Envia vídeo como `sendMedia` com base64 + legenda (`caption`)
+- Requer instância conectada via QR code no painel da Evolution API
+- Variável `WHATSAPP_GROUP_ID`: ID do grupo no formato `{numero}@g.us`
+- Utilitários disponíveis: `listGroups()`, `checkConnection()`

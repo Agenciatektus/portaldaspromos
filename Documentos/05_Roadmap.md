@@ -2,7 +2,7 @@
 
 ---
 
-## ✅ Fase 0 — Concluída
+## ✅ Fase 0 — Base n8n (Concluída)
 
 - [x] n8n: scraping de produtos ML por categoria
 - [x] n8n: geração de links afiliados via API interna ML
@@ -12,38 +12,40 @@
 
 ---
 
-## 🔵 Fase 1 — Infraestrutura YouTube (Semana 1-2)
+## ✅ Fase 1 — Infraestrutura (Concluída)
 
-- [ ] Criar email Google dedicado ao canal
-- [ ] Criar canal YouTube e definir nome, arte, descrição
-- [ ] Ativar YouTube Data API v3 no Google Cloud Console
-- [ ] Gerar OAuth credentials para o canal (Client ID + Secret + Refresh Token)
-- [ ] Fazer upload manual do primeiro vídeo para testar
-- [ ] Adicionar abas VIDEOS e REGRAS_CONTEUDO na planilha
-- [ ] Definir nome do canal e identidade visual
-
-**Resultado esperado:** Canal criado e pronto para receber uploads programáticos.
+- [x] Criar email Google dedicado ao canal
+- [x] Criar canal YouTube
+- [x] Ativar YouTube Data API v3 no Google Cloud Console
+- [x] Gerar OAuth credentials (Client ID + Secret + Refresh Tokens)
+- [x] Adicionar aba "Vídeos" na planilha (colunas A:N)
+- [x] Estrutura de pastas Drive: Aguardando Publicação + Videos Publicados
 
 ---
 
-## 🟠 Fase 2 — Claude Code: Automação de Publicação (Semana 3-4)
+## ✅ Fase 2 — Automação de Publicação (Concluída)
 
-- [ ] Criar projeto `canal-ofertas-claude/` com estrutura de arquivos
-- [ ] Implementar `drive.js` (listar, baixar, mover)
-- [ ] Implementar `sheets.js` (buscar produto por linha, marcar enviado)
-- [ ] Implementar `claude.js` (geração de metadados com IA)
-- [ ] Implementar `youtube.js` (upload YouTube Short)
-- [ ] Implementar `whatsapp.js` (Evolution API — mensagem no grupo)
-- [ ] Implementar `index.js` (cron de 30 min + orquestração)
-- [ ] Testar pipeline completo com 1 vídeo real
-- [ ] Sistema de logs e alertas de erro
-- [ ] Documentar como rodar o projeto localmente
+- [x] Portal web (`public/index.html`) para adicionar vídeos à fila
+- [x] Scraping automático de produto ao colar link (ML, Amazon, Shopee)
+- [x] Geração de link afiliado (ML cookie, Amazon SiteStripe, Shopee GraphQL)
+- [x] `scraper.js` — título, preço, preço antigo, categoria, descrição (A:N)
+- [x] `affiliate.js` — link afiliado ou `""` se não configurado (nunca URL original)
+- [x] `sheets.js` — inserirNaFila (A:N), getPendingVideos, markAsPublished/Error
+- [x] `drive.js` — downloadVideo, renameFile, moveToPublished
+- [x] `youtube.js` — uploadShort + OAuth local (porta 8081)
+- [x] `claude.js` — geração de metadados por template local (sem Claude API)
+- [x] `whatsapp.js` — vídeo + legenda aleatória (750+ combinações) via Evolution API
+- [x] `index.js` — cron 30 min + orquestração completa do pipeline
+- [x] Log em `logs/app.log` com timestamp
+- [x] Renomeação do arquivo no Drive após publicação (`{slug}-{plataforma}-{data}.mp4`)
+- [x] Movimentação para "Videos Publicados" após publicação
+- [x] Dockerfile + .env.example para deploy no Coolify
 
-**Resultado esperado:** Colocar vídeo na pasta → publicar automaticamente no YouTube + WhatsApp.
+**Pipeline completo:** Formulário web → Planilha (Pendente) → Download Drive → YouTube Short → WhatsApp → Planilha (Postado) → Drive renomeado
 
 ---
 
-## 🟡 Fase 3 — Instagram + WhatsApp Oficial (Mês 2)
+## 🔵 Fase 3 — Instagram + WhatsApp Oficial (Mês 2)
 
 - [ ] Criar conta Instagram profissional
 - [ ] Vincular ao Facebook Page (necessário para API)
@@ -58,51 +60,24 @@
 
 ---
 
-## 🟣 Fase 4 — Shopee + Escala (Mês 3+)
+## 🟣 Fase 4 — Shopee Afiliado via n8n + Escala (Mês 3+)
 
-- [ ] Criar workflow n8n equivalente para Shopee
-- [ ] Adicionar aba Cat Shopee na planilha
-- [ ] Avaliar automação de criação de vídeos (CapCut / Canva API)
+- [ ] Criar workflow n8n equivalente para Shopee (busca de produtos)
+- [ ] Configurar `SHOPEE_APP_ID` + `SHOPEE_SECRET` no `.env`
+- [ ] Testar geração de link afiliado Shopee (`affiliate.js` já implementado)
 - [ ] Dashboard de métricas (cliques por produto, plataforma)
 - [ ] A/B test automático de títulos
-- [ ] Geração de thumbnail automática (Sharp/Canvas)
 - [ ] Agendamento inteligente por horário de pico
+- [ ] Automação de criação de vídeos (CapCut / Canva API)
 
 ---
 
-## Checklist "O que fazer AGORA"
-
-Antes de qualquer código, complete estas ações manualmente:
-
-1. **Criar email Google dedicado** (ex: portaldepromos@gmail.com)
-2. **Criar canal YouTube** com esse email
-3. **Habilitar YouTube Data API v3** no Google Cloud Console
-4. **Gerar credenciais OAuth** para o canal
-5. **Colocar um vídeo de teste** na pasta "Aguardando Publicação" do Drive
-   - Nome no padrão: `3_fone-bluetooth.mp4` (linha 3 da aba Produtos ML)
-6. **Adicionar abas** VIDEOS e REGRAS_CONTEUDO na planilha
-7. **Compartilhar credenciais** com Claude Code para iniciar o desenvolvimento
-
----
-
-## O que o Claude Code vai precisar de você para iniciar
-
-| Item | Descrição |
-|------|-----------|
-| JSON do Service Account | Com acesso a Drive + Sheets + YouTube |
-| API Key Anthropic | Para geração de metadados com IA |
-| Vídeo de teste no Drive | Nomeado no padrão `{linha}_slug.mp4` |
-| YouTube OAuth configurado | Client ID + Secret + Refresh Token |
-
-> Não precisa de senhas — tudo via OAuth e tokens de API, sem risco.
-
----
-
-## Alerta de Manutenção Recorrente
+## Manutenção Recorrente
 
 | Tarefa | Frequência | Como fazer |
 |--------|------------|------------|
-| Renovar cookie do ML (n8n) | A cada 2-4 semanas | DevTools → copiar header Cookie |
-| Verificar scraping ML | Semanal | Rodar n8n manualmente e checar planilha |
+| Renovar cookie ML afiliado | A cada 2-4 semanas | DevTools → Application → Cookies → copiar `cookie` |
+| Renovar cookie Amazon afiliado | A cada 2-4 semanas | DevTools → Application → Cookies → copiar `cookie` |
+| Verificar scraping ML | Semanal | Colar link no portal e conferir campos preenchidos |
 | Checar quota YouTube API | Mensal | Google Cloud Console → quotas |
-| Revisar templates de conteúdo | Mensal | Aba REGRAS_CONTEUDO da planilha |
+| Verificar instância Evolution API | Semanal | `npm run test:whatsapp` |

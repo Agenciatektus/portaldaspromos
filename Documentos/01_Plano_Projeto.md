@@ -29,8 +29,9 @@ https://chat.whatsapp.com/LtTtjL5v2ih8jngwXsCBg2
 
 ## Plataformas de Afiliado
 
-- **Mercado Livre Afiliados** — Tag: `agencia_tektus`
-- **Shopee Affiliate Program** — A integrar (Fase 4)
+- **Mercado Livre Afiliados** — Tag: `agencia_tektus` (cookie API)
+- **Amazon Associados** — SiteStripe (cookie API)
+- **Shopee Affiliate Program** — GraphQL API (`SHOPEE_APP_ID` + `SHOPEE_SECRET`)
 
 ---
 
@@ -42,8 +43,8 @@ https://chat.whatsapp.com/LtTtjL5v2ih8jngwXsCBg2
 | Google Sheets (planilha controle) | ✅ Ativo |
 | Google Drive (pastas) | ✅ Ativo |
 | Grupo WhatsApp | ✅ Ativo |
-| Canal YouTube | ❌ Criar |
-| Email Google dedicado ao canal | ❌ Criar |
+| Canal YouTube | ✅ Criado |
+| Email Google dedicado ao canal | ✅ Criado |
 | Instagram Profissional | ❌ Criar (Fase 3) |
 | WhatsApp Business API | ❌ Criar (Fase 3) |
 
