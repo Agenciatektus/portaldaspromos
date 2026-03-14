@@ -161,6 +161,79 @@ A mensagem é composta por 4 blocos sorteados aleatoriamente a cada envio:
 
 **Total de combinações:** 6 × 5 × 5 × 5 = **750 variações**
 
+Para editar as frases, abra `src/whatsapp.js` e altere os arrays abaixo de `// === FRASES ===`.
+
+### Frases atuais — `src/whatsapp.js`
+
+**CABEÇALHOS** (sorteado 1 por mensagem)
+```
+🚨 *ALERTA DE PROMOÇÃO!* 🚨
+🔥 *OFERTA QUE NÃO DÁ PRA IGNORAR!*
+💥 *OLHA O PREÇO DISSO!*
+👀 *VOCÊ VAI QUERER VER ISSO*
+🎯 *ACHAMOS UMA PECHINCHA!*
+⚡ *PREÇO CAIU, CORRE!*
+```
+
+**FRASES DE PREÇO COM DESCONTO** (quando tem preço antigo + % desconto)
+```
+🤑 *{desconto} OFF — isso não é erro de preço, é sorte!*
+~~{precoAntigo}~~ ➡️ *{preco}*
+
+😱 *{desconto} de desconto?! Tá de brincadeira!*
+~~{precoAntigo}~~ por apenas *{preco}*
+
+🏷️ *{desconto} OFF — o gerente não sabe que fez isso*
+~~{precoAntigo}~~ ➡️ *{preco}*
+
+💸 *Jogaram {desconto} fora no preço. Literalmente.*
+~~{precoAntigo}~~ e agora *{preco}*
+
+🎉 *{desconto} de desconto! Seu cartão agradece*
+De ~~{precoAntigo}~~ por *{preco}*
+```
+
+**FRASES DE PREÇO SEM DESCONTO** (quando não tem preço antigo)
+```
+💸 Por apenas *{preco}*
+_(seu bolso agradece, e muito)_
+
+💰 *{preco}* — tá barato demais pra passar batido
+
+🏷️ *{preco}* — pergunta pro seu vizinho se ele viu mais barato
+
+✅ Por *{preco}* essa oferta precisa sair hoje
+
+📉 *{preco}* — o preço tá no chão, e o produto é top
+```
+
+**CTAs** (aparecem só quando tem link afiliado)
+```
+🛒 *Garanta antes que acabe* _(ou antes que alguém te conte que já comprou)_ 😅
+{link}
+
+👇 *Vai lá antes que o estoque acabe:*
+{link}
+
+🏃 *Corre que o preço pode subir a qualquer momento:*
+{link}
+
+🎁 *Compra agora e agradece depois:*
+{link}
+
+🔗 *Clica aqui antes que o desconto suma:*
+{link}
+```
+
+**ENCERRAMENTOS**
+```
+⚡ _Corre que oferta não espera!_
+🕐 _Por tempo limitado — vai que acaba!_
+🚀 _Quem viu, viu. Quem não viu, se arrependeu._
+🔔 _Salva essa mensagem antes de perder a oferta!_
+💨 _Rápido, rápido — estoque limitado!_
+```
+
 ---
 
 ## Plataformas Suportadas
