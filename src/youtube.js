@@ -32,12 +32,16 @@ function loadCredentials() {
 }
 
 function createOAuth2Client() {
+  const clientId     = process.env.GOOGLE_CLIENT_ID;
+  const clientSecret = process.env.GOOGLE_CLIENT_SECRET;
+
+  if (clientId && clientSecret) {
+    return new google.auth.OAuth2(clientId, clientSecret, REDIRECT_URI);
+  }
+
+  // Fallback: lê do arquivo (ambiente local sem .env completo)
   const creds = loadCredentials();
-  return new google.auth.OAuth2(
-    process.env.GOOGLE_CLIENT_ID || creds.client_id,
-    process.env.GOOGLE_CLIENT_SECRET || creds.client_secret,
-    REDIRECT_URI
-  );
+  return new google.auth.OAuth2(creds.client_id, creds.client_secret, REDIRECT_URI);
 }
 
 /**
