@@ -127,7 +127,7 @@ app.post('/api/publicar', async (req, res) => {
 // ─── Rota do painel ─────────────────────────────────────────────────────────
 
 app.get('/painel', (req, res) => {
-  res.sendFile(path.join(__dirname, '..', 'public', 'painel.html'));
+  res.redirect('/');
 });
 
 // ─── API — Fila ───────────────────────────────────────────────────────────────

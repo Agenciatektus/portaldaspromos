@@ -6,46 +6,99 @@
   <title>Portal de Promos</title>
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
     body {
       font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
       background: #0f172a;
       color: #e2e8f0;
-      min-height: 100vh;
+      height: 100vh;
       display: flex;
-      align-items: flex-start;
-      justify-content: center;
-      padding: 2rem 1rem;
+      overflow: hidden;
     }
-    .card {
+
+    /* ── Sidebar ── */
+    .sidebar {
+      width: 220px;
+      flex-shrink: 0;
       background: #1e293b;
-      border-radius: 12px;
-      padding: 2rem;
-      width: 100%;
-      max-width: 560px;
-      box-shadow: 0 4px 24px rgba(0,0,0,0.4);
+      border-right: 1px solid #334155;
+      display: flex;
+      flex-direction: column;
+      overflow-y: auto;
     }
-    h1 {
-      font-size: 1.4rem;
+    .sidebar-logo {
+      padding: 1.25rem 1.25rem 1rem;
+      border-bottom: 1px solid #334155;
+    }
+    .sidebar-logo-titulo {
+      font-size: 0.95rem;
       font-weight: 700;
       color: #f8fafc;
-      margin-bottom: 0.25rem;
+      line-height: 1.3;
     }
-    .subtitle {
-      font-size: 0.85rem;
-      color: #94a3b8;
-      margin-bottom: 1.75rem;
+    .sidebar-logo-titulo span { color: #6366f1; }
+    .sidebar-logo-sub {
+      font-size: 0.72rem;
+      color: #475569;
+      margin-top: 0.2rem;
     }
+    nav { padding: 0.75rem 0.5rem; flex: 1; }
+    .nav-item {
+      display: flex;
+      align-items: center;
+      gap: 0.65rem;
+      padding: 0.6rem 0.85rem;
+      border-radius: 7px;
+      cursor: pointer;
+      font-size: 0.875rem;
+      font-weight: 500;
+      color: #64748b;
+      transition: background 0.15s, color 0.15s;
+      user-select: none;
+      margin-bottom: 0.15rem;
+    }
+    .nav-item:hover { background: #0f172a55; color: #cbd5e1; }
+    .nav-item.ativo { background: #6366f115; color: #818cf8; }
+    .nav-item .ico { font-size: 1rem; width: 20px; text-align: center; flex-shrink: 0; }
+
+    /* ── Main ── */
+    .main {
+      flex: 1;
+      overflow-y: auto;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .secao { display: none; padding: 1.75rem 2rem; max-width: 1000px; }
+    .secao.ativa { display: block; }
+
+    .secao-header {
+      margin-bottom: 1.5rem;
+    }
+    .secao-titulo-h {
+      font-size: 1.2rem;
+      font-weight: 700;
+      color: #f1f5f9;
+    }
+    .secao-sub {
+      font-size: 0.8rem;
+      color: #475569;
+      margin-top: 0.2rem;
+    }
+
+    /* ── Formulário Adicionar ── */
+    .form-wrap { max-width: 520px; }
     .form-group { margin-bottom: 1.1rem; }
     label {
       display: block;
-      font-size: 0.8rem;
+      font-size: 0.78rem;
       font-weight: 600;
       color: #94a3b8;
       text-transform: uppercase;
       letter-spacing: 0.05em;
       margin-bottom: 0.35rem;
     }
-    textarea {
+    input[type="url"], input[type="text"], select, textarea {
       width: 100%;
       padding: 0.65rem 0.85rem;
       border-radius: 8px;
@@ -55,287 +108,654 @@
       font-size: 0.9rem;
       font-family: inherit;
       outline: none;
-      resize: vertical;
       transition: border-color 0.2s;
     }
-    textarea:focus { border-color: #6366f1; }
-    textarea::placeholder { color: #475569; }
-    input, select {
-      width: 100%;
-      padding: 0.65rem 0.85rem;
-      border-radius: 8px;
-      border: 1px solid #334155;
-      background: #0f172a;
-      color: #e2e8f0;
-      font-size: 0.95rem;
-      outline: none;
-      transition: border-color 0.2s;
-    }
-    input:focus, select:focus { border-color: #6366f1; }
-    input::placeholder { color: #475569; }
+    input:focus, select:focus, textarea:focus { border-color: #6366f1; }
+    input::placeholder, textarea::placeholder { color: #475569; }
+    textarea { resize: vertical; }
     .row { display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem; }
     .plataforma-badge {
-      display: inline-block;
-      font-size: 0.75rem;
-      font-weight: 600;
-      padding: 0.2rem 0.6rem;
-      border-radius: 99px;
-      margin-left: 0.5rem;
-      vertical-align: middle;
+      display: inline-block; font-size: 0.75rem; font-weight: 600;
+      padding: 0.2rem 0.6rem; border-radius: 99px;
+      margin-left: 0.5rem; vertical-align: middle;
     }
     .badge-ml   { background: #fef3c7; color: #92400e; }
     .badge-amz  { background: #fde68a; color: #78350f; }
     .badge-sho  { background: #fee2e2; color: #991b1b; }
     .badge-none { background: #1e293b; color: #64748b; border: 1px solid #334155; }
-    .hint {
-      font-size: 0.75rem;
-      color: #64748b;
-      margin-top: 0.3rem;
-    }
-
-    #dadosProduto {
-      display: none;
-      border-top: 1px solid #334155;
-      margin-top: 1.25rem;
-      padding-top: 1.25rem;
-    }
-    #dadosProduto.visivel { display: block; }
-
-    /* Estado de carregamento do scrape */
-    #scrapeStatus {
-      font-size: 0.8rem;
-      margin-top: 0.4rem;
-      min-height: 1.2em;
-    }
+    .hint { font-size: 0.75rem; color: #64748b; margin-top: 0.3rem; }
     #scrapeStatus.loading { color: #94a3b8; }
     #scrapeStatus.ok      { color: #4ade80; }
     #scrapeStatus.erro    { color: #f87171; }
-
+    #dadosProduto { display: none; border-top: 1px solid #334155; margin-top: 1.25rem; padding-top: 1.25rem; }
+    #dadosProduto.visivel { display: block; }
     button[type="submit"] {
-      width: 100%;
-      padding: 0.85rem;
-      background: #6366f1;
-      color: #fff;
-      font-size: 1rem;
-      font-weight: 700;
-      border: none;
-      border-radius: 8px;
-      cursor: pointer;
-      margin-top: 0.5rem;
-      transition: background 0.2s, opacity 0.2s;
+      width: 100%; padding: 0.85rem; background: #6366f1; color: #fff;
+      font-size: 1rem; font-weight: 700; border: none; border-radius: 8px;
+      cursor: pointer; margin-top: 0.5rem; transition: background 0.2s, opacity 0.2s;
     }
     button[type="submit"]:hover { background: #4f46e5; }
     button[type="submit"]:disabled { opacity: 0.5; cursor: not-allowed; }
     #mensagem {
-      margin-top: 1rem;
-      padding: 0.75rem 1rem;
-      border-radius: 8px;
-      font-size: 0.9rem;
-      display: none;
+      margin-top: 1rem; padding: 0.75rem 1rem;
+      border-radius: 8px; font-size: 0.9rem; display: none;
     }
     #mensagem.success { background: #14532d; color: #86efac; display: block; }
     #mensagem.error   { background: #450a0a; color: #fca5a5; display: block; }
+
+    /* ── Cards de status ── */
+    .cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); gap: 1rem; margin-bottom: 1.5rem; }
+    .card {
+      background: #1e293b; border: 1px solid #334155;
+      border-radius: 10px; padding: 1rem 1.25rem;
+    }
+    .card-titulo { font-size: 0.72rem; font-weight: 600; color: #64748b; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 0.5rem; }
+    .card-valor  { font-size: 0.95rem; font-weight: 600; display: flex; align-items: center; gap: 0.4rem; }
+    .dot       { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+    .dot-ok    { background: #4ade80; }
+    .dot-erro  { background: #f87171; }
+    .dot-wait  { background: #fbbf24; }
+    .dot-none  { background: #475569; }
+    .card-sub  { font-size: 0.72rem; color: #64748b; margin-top: 0.25rem; }
+    .vars-lista { margin-top: 0.75rem; display: none; }
+    .vars-lista.aberta { display: block; }
+    .var-item { display: flex; align-items: center; gap: 0.4rem; font-size: 0.75rem; color: #94a3b8; padding: 0.15rem 0; }
+    .var-item .ok  { color: #4ade80; }
+    .var-item .nok { color: #f87171; }
+
+    /* ── Botões ── */
+    .btn {
+      padding: 0.5rem 0.9rem; border-radius: 7px; border: none;
+      font-size: 0.84rem; font-weight: 600; cursor: pointer; transition: opacity 0.15s;
+    }
+    .btn:disabled { opacity: 0.4; cursor: not-allowed; }
+    .btn-primary { background: #6366f1; color: #fff; }
+    .btn-primary:hover:not(:disabled) { background: #4f46e5; }
+    .btn-danger  { background: #dc2626; color: #fff; }
+    .btn-danger:hover:not(:disabled)  { background: #b91c1c; }
+    .btn-warning { background: #d97706; color: #fff; }
+    .btn-warning:hover:not(:disabled) { background: #b45309; }
+    .btn-ghost   { background: transparent; color: #94a3b8; border: 1px solid #334155; }
+    .btn-ghost:hover:not(:disabled)   { color: #e2e8f0; border-color: #6366f1; }
+    .btn-sm { padding: 0.28rem 0.6rem; font-size: 0.76rem; }
+
+    .toolbar { display: flex; align-items: center; gap: 0.75rem; margin-bottom: 1.25rem; flex-wrap: wrap; }
+
+    /* ── Tabela ── */
+    .tabela-wrap { overflow-x: auto; border-radius: 10px; border: 1px solid #334155; }
+    table { width: 100%; border-collapse: collapse; font-size: 0.84rem; }
+    th {
+      background: #1e293b; color: #64748b; text-transform: uppercase;
+      font-size: 0.7rem; letter-spacing: 0.05em;
+      padding: 0.6rem 0.85rem; text-align: left; border-bottom: 1px solid #334155;
+    }
+    td { padding: 0.6rem 0.85rem; border-bottom: 1px solid #1e293b; vertical-align: middle; color: #cbd5e1; }
+    tr:last-child td { border-bottom: none; }
+    tr:hover td { background: #1e293b44; }
+    .truncate { max-width: 200px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+    /* ── Badges tabela ── */
+    .badge { display: inline-block; padding: 0.18rem 0.5rem; border-radius: 99px; font-size: 0.7rem; font-weight: 600; }
+    .badge-pendente  { background: #1e3a5f; color: #60a5fa; }
+    .badge-postado   { background: #14532d; color: #4ade80; }
+    .badge-erro      { background: #450a0a; color: #f87171; }
+    .badge-cancelado { background: #1e293b; color: #475569; border: 1px solid #334155; }
+
+    /* ── Filtros ── */
+    .filtros { display: flex; gap: 0.4rem; flex-wrap: wrap; }
+    .filtro {
+      padding: 0.28rem 0.7rem; border-radius: 99px; font-size: 0.76rem; font-weight: 600;
+      cursor: pointer; border: 1px solid #334155; color: #64748b; background: transparent; transition: all 0.15s;
+    }
+    .filtro:hover { color: #e2e8f0; border-color: #6366f1; }
+    .filtro.ativo { background: #6366f1; color: #fff; border-color: #6366f1; }
+
+    /* ── Cron card ── */
+    .cron-card {
+      background: #1e293b; border: 1px solid #334155;
+      border-radius: 10px; padding: 1.5rem; max-width: 460px;
+    }
+    .cron-estado { display: flex; align-items: center; gap: 0.5rem; font-size: 1.05rem; font-weight: 700; margin-bottom: 1.25rem; }
+    .cron-linha { display: flex; justify-content: space-between; font-size: 0.875rem; padding: 0.4rem 0; border-bottom: 1px solid #0f172a; }
+    .cron-linha:last-of-type { border-bottom: none; }
+    .cron-label { color: #64748b; }
+    .cron-valor { color: #e2e8f0; font-weight: 500; }
+    .cron-actions { margin-top: 1.25rem; }
+
+    /* ── Logs ── */
+    .log-area {
+      background: #020617; border: 1px solid #1e293b; border-radius: 8px;
+      padding: 1rem; font-family: 'Menlo', 'Consolas', monospace;
+      font-size: 0.76rem; line-height: 1.6; color: #94a3b8;
+      height: calc(100vh - 200px); overflow-y: auto; white-space: pre-wrap; word-break: break-all;
+    }
+    .log-area .err  { color: #f87171; }
+    .log-area .ok   { color: #4ade80; }
+    .log-area .warn { color: #fbbf24; }
+
+    /* ── Alertas ── */
+    .alerta { padding: 0.65rem 1rem; border-radius: 7px; font-size: 0.875rem; margin-top: 0.75rem; display: none; }
+    .alerta.success { background: #14532d; color: #86efac; display: block; }
+    .alerta.error   { background: #450a0a; color: #fca5a5; display: block; }
+
+    /* ── Misc ── */
+    .vazio { text-align: center; color: #475569; padding: 3rem 1rem; font-size: 0.875rem; }
+    .toggle-label { display: flex; align-items: center; gap: 0.5rem; font-size: 0.8rem; color: #64748b; cursor: pointer; }
+    .toggle-label input[type="checkbox"] { accent-color: #6366f1; }
+    .secao-sep { border: none; border-top: 1px solid #1e293b; margin: 1.5rem 0; }
+    .sub-titulo { font-size: 0.9rem; font-weight: 700; color: #f1f5f9; margin-bottom: 0.75rem; }
+    #tabelaGrupos { margin-top: 1rem; display: none; }
   </style>
 </head>
 <body>
-<div class="card">
-  <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:0.25rem">
-    <h1>Portal de Promos</h1>
-    <a href="/painel" style="font-size:0.8rem;color:#6366f1;text-decoration:none;border:1px solid #334155;padding:0.25rem 0.65rem;border-radius:6px">⚙ Painel</a>
+
+<!-- ── Sidebar ── -->
+<aside class="sidebar">
+  <div class="sidebar-logo">
+    <div class="sidebar-logo-titulo">🎯 Portal de <span>Promos</span></div>
+    <div class="sidebar-logo-sub">Agência Tektus</div>
   </div>
-  <p class="subtitle">Adicione um vídeo à fila de publicação</p>
+  <nav>
+    <div class="nav-item ativo" data-secao="adicionar">
+      <span class="ico">➕</span> Adicionar Vídeo
+    </div>
+    <div class="nav-item" data-secao="status">
+      <span class="ico">📊</span> Status
+    </div>
+    <div class="nav-item" data-secao="fila">
+      <span class="ico">📋</span> Fila
+    </div>
+    <div class="nav-item" data-secao="automacao">
+      <span class="ico">⚙️</span> Automação
+    </div>
+    <div class="nav-item" data-secao="logs">
+      <span class="ico">📜</span> Logs
+    </div>
+  </nav>
+</aside>
 
-  <form id="form">
-    <div class="form-group">
-      <label>Link do Drive (vídeo MP4)</label>
-      <input type="url" id="driveLink" placeholder="https://drive.google.com/file/d/.../view" required />
-      <p class="hint">Cole o link de compartilhamento do arquivo MP4 no Google Drive</p>
+<!-- ── Main ── -->
+<main class="main">
+
+  <!-- ── ADICIONAR VÍDEO ── -->
+  <div class="secao ativa" id="secao-adicionar">
+    <div class="secao-header">
+      <div class="secao-titulo-h">Adicionar Vídeo à Fila</div>
+      <div class="secao-sub">Cole o link do Drive e do produto — dados serão preenchidos automaticamente</div>
+    </div>
+    <div class="form-wrap">
+      <form id="form">
+        <div class="form-group">
+          <label>Link do Drive (vídeo MP4)</label>
+          <input type="url" id="driveLink" placeholder="https://drive.google.com/file/d/.../view" required />
+          <p class="hint">Link de compartilhamento do arquivo MP4 no Google Drive</p>
+        </div>
+
+        <div class="form-group">
+          <label>
+            Link do Produto
+            <span id="plataformaBadge" class="plataforma-badge badge-none">—</span>
+          </label>
+          <input type="url" id="produtoLink" placeholder="https://www.mercadolivre.com.br/..." required />
+          <p id="scrapeStatus" class="hint">Mercado Livre, Amazon ou Shopee — dados serão buscados automaticamente</p>
+        </div>
+
+        <div id="dadosProduto">
+          <div class="form-group">
+            <label>Nome do Produto</label>
+            <input type="text" id="titulo" placeholder="ex: Fritadeira Air Fryer 4L" required />
+          </div>
+
+          <div class="row">
+            <div class="form-group">
+              <label>Preço Atual</label>
+              <input type="text" id="preco" placeholder="ex: R$ 189,90" required />
+            </div>
+            <div class="form-group">
+              <label>Preço Antigo <span style="color:#475569;font-weight:400">(opcional)</span></label>
+              <input type="text" id="precoAntigo" placeholder="ex: R$ 289,90" />
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label>Categoria</label>
+            <select id="categoria">
+              <option value="">— Selecione —</option>
+              <option>Casa/Cozinha</option>
+              <option>Eletrônicos</option>
+              <option>Moda</option>
+              <option>Beleza/Saúde</option>
+              <option>Esportes</option>
+              <option>Informática</option>
+              <option>Bebês/Crianças</option>
+              <option>Ferramentas</option>
+              <option>Outros</option>
+            </select>
+          </div>
+
+          <div class="form-group">
+            <label>Descrição <span style="color:#475569;font-weight:400">(opcional — SEO)</span></label>
+            <textarea id="descricao" rows="4" placeholder="Descrição do produto para SEO..."></textarea>
+          </div>
+
+          <button type="submit" id="btn">Adicionar à Fila</button>
+        </div>
+
+        <div id="mensagem"></div>
+      </form>
+    </div>
+  </div>
+
+  <!-- ── STATUS ── -->
+  <div class="secao" id="secao-status">
+    <div class="secao-header">
+      <div class="secao-titulo-h">Status das Integrações</div>
+      <div class="secao-sub">Verifique a saúde das conexões e variáveis de ambiente</div>
+    </div>
+    <div class="toolbar">
+      <button class="btn btn-ghost" onclick="carregarStatus()">↻ Atualizar</button>
+      <button class="btn btn-primary" onclick="testarWhatsApp()" id="btnTestarWA">Testar WhatsApp</button>
+    </div>
+    <div id="alertaWA" class="alerta"></div>
+    <div class="cards" id="cardsStatus">
+      <div class="card"><div class="card-titulo">WhatsApp</div><div class="card-valor"><span class="dot dot-none"></span> —</div></div>
+      <div class="card"><div class="card-titulo">Planilha</div><div class="card-valor"><span class="dot dot-none"></span> —</div></div>
+      <div class="card"><div class="card-titulo">Drive</div><div class="card-valor"><span class="dot dot-none"></span> —</div></div>
+      <div class="card"><div class="card-titulo">Variáveis</div><div class="card-valor"><span class="dot dot-none"></span> —</div></div>
     </div>
 
-    <div class="form-group">
-      <label>
-        Link do Produto
-        <span id="plataformaBadge" class="plataforma-badge badge-none">—</span>
+    <hr class="secao-sep">
+
+    <div class="sub-titulo">Grupos WhatsApp</div>
+    <button class="btn btn-ghost" onclick="listarGrupos()" id="btnGrupos">Listar grupos</button>
+    <div id="tabelaGrupos"></div>
+  </div>
+
+  <!-- ── FILA ── -->
+  <div class="secao" id="secao-fila">
+    <div class="secao-header">
+      <div class="secao-titulo-h">Fila de Publicação</div>
+      <div class="secao-sub">Visualize e gerencie os vídeos na planilha</div>
+    </div>
+    <div class="toolbar">
+      <div class="filtros">
+        <button class="filtro ativo" data-filtro="">Todos</button>
+        <button class="filtro" data-filtro="Pendente">🟡 Pendente</button>
+        <button class="filtro" data-filtro="Postado">✅ Postado</button>
+        <button class="filtro" data-filtro="Erro">❌ Erro</button>
+        <button class="filtro" data-filtro="Cancelado">⊘ Cancelado</button>
+      </div>
+      <button class="btn btn-ghost" onclick="carregarFila()">↻ Atualizar</button>
+    </div>
+    <div id="tabelaFila"></div>
+  </div>
+
+  <!-- ── AUTOMAÇÃO ── -->
+  <div class="secao" id="secao-automacao">
+    <div class="secao-header">
+      <div class="secao-titulo-h">Automação</div>
+      <div class="secao-sub">Estado do cron e controle manual de execução</div>
+    </div>
+    <div class="cron-card">
+      <div class="cron-estado" id="cronEstado">
+        <span class="dot dot-none"></span> Carregando...
+      </div>
+      <div class="cron-linha">
+        <span class="cron-label">Última execução</span>
+        <span class="cron-valor" id="cronUltima">—</span>
+      </div>
+      <div class="cron-linha">
+        <span class="cron-label">Próxima execução</span>
+        <span class="cron-valor" id="cronProxima">—</span>
+      </div>
+      <div class="cron-linha">
+        <span class="cron-label">Último resultado</span>
+        <span class="cron-valor" id="cronResultado">—</span>
+      </div>
+      <div class="cron-actions">
+        <button class="btn btn-primary" id="btnDisparar" onclick="dispararCron()">▶ Executar Agora</button>
+      </div>
+    </div>
+    <div id="alertaCron" class="alerta" style="max-width:460px"></div>
+  </div>
+
+  <!-- ── LOGS ── -->
+  <div class="secao" id="secao-logs">
+    <div class="secao-header">
+      <div class="secao-titulo-h">Logs</div>
+      <div class="secao-sub">Últimas 200 linhas do app.log</div>
+    </div>
+    <div class="toolbar">
+      <button class="btn btn-ghost" onclick="carregarLogs()">↻ Atualizar</button>
+      <label class="toggle-label">
+        <input type="checkbox" id="autoLogs" onchange="toggleAutoLogs()">
+        Auto-atualizar (10s)
       </label>
-      <input type="url" id="produtoLink" placeholder="https://www.mercadolivre.com.br/..." required />
-      <p id="scrapeStatus" class="hint">Mercado Livre, Amazon ou Shopee — dados serão buscados automaticamente</p>
     </div>
+    <div class="log-area" id="logArea">Selecione "Logs" para carregar...</div>
+  </div>
 
-    <!-- Campos ocultos até o scrape retornar os dados -->
-    <div id="dadosProduto">
-      <div class="form-group">
-        <label>Nome do Produto</label>
-        <input type="text" id="titulo" placeholder="ex: Fritadeira Air Fryer 4L" required />
-      </div>
-
-      <div class="row">
-        <div class="form-group">
-          <label>Preço Atual</label>
-          <input type="text" id="preco" placeholder="ex: R$ 189,90" required />
-        </div>
-        <div class="form-group">
-          <label>Preço Antigo <span style="color:#475569;font-weight:400">(opcional)</span></label>
-          <input type="text" id="precoAntigo" placeholder="ex: R$ 289,90" />
-        </div>
-      </div>
-
-      <div class="form-group">
-        <label>Categoria</label>
-        <select id="categoria">
-          <option value="">— Selecione —</option>
-          <option>Casa/Cozinha</option>
-          <option>Eletrônicos</option>
-          <option>Moda</option>
-          <option>Beleza/Saúde</option>
-          <option>Esportes</option>
-          <option>Informática</option>
-          <option>Bebês/Crianças</option>
-          <option>Ferramentas</option>
-          <option>Outros</option>
-        </select>
-      </div>
-
-      <div class="form-group">
-        <label>Descrição <span style="color:#475569;font-weight:400">(opcional — SEO)</span></label>
-        <textarea id="descricao" rows="4" placeholder="Descrição do produto para SEO..."></textarea>
-      </div>
-
-      <button type="submit" id="btn">Adicionar à Fila</button>
-    </div>
-
-    <div id="mensagem"></div>
-  </form>
-</div>
+</main>
 
 <script>
-  const produtoInput = document.getElementById('produtoLink');
-  const badge        = document.getElementById('plataformaBadge');
-  const status       = document.getElementById('scrapeStatus');
-  const dadosDiv     = document.getElementById('dadosProduto');
-  let scrapeTimer    = null;
+// ── Navegação sidebar ────────────────────────────────────────────────────────
+const navItems = document.querySelectorAll('.nav-item');
+const secoes   = document.querySelectorAll('.secao');
 
-  function detectarPlataforma(url) {
-    if (/mercadolivre\.com|mercadolibre\.com/i.test(url)) return 'mercadolivre';
-    if (/amazon\.com\.br|amzn\.to/i.test(url)) return 'amazon';
-    if (/shopee\.com|shp\.ee/i.test(url)) return 'shopee';
-    return null;
-  }
+function ativarSecao(id) {
+  navItems.forEach(n => n.classList.toggle('ativo', n.dataset.secao === id));
+  secoes.forEach(s => s.classList.toggle('ativa', s.id === 'secao-' + id));
+  if (id === 'status')    carregarStatus();
+  if (id === 'fila')      carregarFila();
+  if (id === 'automacao') carregarCron();
+  if (id === 'logs')      carregarLogs();
+  history.replaceState(null, '', '#' + id);
+}
 
-  function atualizarBadge(plataforma) {
-    const labels  = { mercadolivre: 'Mercado Livre', amazon: 'Amazon', shopee: 'Shopee' };
-    const classes = { mercadolivre: 'badge-ml', amazon: 'badge-amz', shopee: 'badge-sho' };
-    badge.textContent = plataforma ? labels[plataforma] : '—';
-    badge.className   = 'plataforma-badge ' + (plataforma ? classes[plataforma] : 'badge-none');
-  }
+navItems.forEach(n => n.addEventListener('click', () => ativarSecao(n.dataset.secao)));
 
-  function mostrarDados(dados) {
-    document.getElementById('titulo').value      = dados.titulo      || '';
-    document.getElementById('preco').value       = dados.preco       || '';
-    document.getElementById('precoAntigo').value = dados.precoAntigo || '';
-    if (dados.categoria) {
-      const sel = document.getElementById('categoria');
-      const opt = Array.from(sel.options).find(o => o.value === dados.categoria);
-      if (opt) {
-        sel.value = dados.categoria;
-      } else {
-        const newOpt = document.createElement('option');
-        newOpt.value = dados.categoria;
-        newOpt.textContent = dados.categoria;
-        sel.appendChild(newOpt);
-        sel.value = dados.categoria;
-      }
+// Suporte a hash de URL
+const hash = location.hash.replace('#', '');
+if (hash && document.getElementById('secao-' + hash)) ativarSecao(hash);
+
+// ── Formulário Adicionar ─────────────────────────────────────────────────────
+const produtoInput = document.getElementById('produtoLink');
+const badge        = document.getElementById('plataformaBadge');
+const scrapeStatus = document.getElementById('scrapeStatus');
+const dadosDiv     = document.getElementById('dadosProduto');
+let scrapeTimer    = null;
+
+function detectarPlataforma(url) {
+  if (/mercadolivre\.com|mercadolibre\.com/i.test(url)) return 'mercadolivre';
+  if (/amazon\.com\.br|amzn\.to/i.test(url))           return 'amazon';
+  if (/shopee\.com|shp\.ee/i.test(url))                return 'shopee';
+  return null;
+}
+
+function atualizarBadge(p) {
+  const labels  = { mercadolivre: 'Mercado Livre', amazon: 'Amazon', shopee: 'Shopee' };
+  const classes = { mercadolivre: 'badge-ml', amazon: 'badge-amz', shopee: 'badge-sho' };
+  badge.textContent = p ? labels[p] : '—';
+  badge.className   = 'plataforma-badge ' + (p ? classes[p] : 'badge-none');
+}
+
+function mostrarDados(dados) {
+  document.getElementById('titulo').value      = dados.titulo      || '';
+  document.getElementById('preco').value       = dados.preco       || '';
+  document.getElementById('precoAntigo').value = dados.precoAntigo || '';
+  if (dados.categoria) {
+    const sel = document.getElementById('categoria');
+    const opt = Array.from(sel.options).find(o => o.value === dados.categoria);
+    if (opt) { sel.value = dados.categoria; }
+    else {
+      const o = document.createElement('option');
+      o.value = dados.categoria; o.textContent = dados.categoria;
+      sel.appendChild(o); sel.value = dados.categoria;
     }
-    document.getElementById('descricao').value   = dados.descricao  || '';
-    dadosDiv.classList.add('visivel');
   }
+  document.getElementById('descricao').value = dados.descricao || '';
+  dadosDiv.classList.add('visivel');
+}
 
-  function ocultarDados() {
-    dadosDiv.classList.remove('visivel');
-    document.getElementById('titulo').value      = '';
-    document.getElementById('preco').value       = '';
-    document.getElementById('precoAntigo').value = '';
-    document.getElementById('categoria').value   = '';
-    document.getElementById('descricao').value   = '';
+function ocultarDados() {
+  dadosDiv.classList.remove('visivel');
+  ['titulo','preco','precoAntigo','descricao'].forEach(id => document.getElementById(id).value = '');
+  document.getElementById('categoria').value = '';
+}
+
+produtoInput.addEventListener('input', () => {
+  const url = produtoInput.value.trim();
+  const p   = detectarPlataforma(url);
+  atualizarBadge(p);
+  clearTimeout(scrapeTimer);
+  ocultarDados();
+  if (!p || !url) {
+    scrapeStatus.textContent = 'Mercado Livre, Amazon ou Shopee — dados serão buscados automaticamente';
+    scrapeStatus.className = 'hint'; return;
   }
-
-  produtoInput.addEventListener('input', () => {
-    const url        = produtoInput.value.trim();
-    const plataforma = detectarPlataforma(url);
-    atualizarBadge(plataforma);
-    clearTimeout(scrapeTimer);
-    ocultarDados();
-
-    if (!plataforma || !url) {
-      status.textContent = 'Mercado Livre, Amazon ou Shopee — dados serão buscados automaticamente';
-      status.className = 'hint';
-      return;
-    }
-
-    status.textContent = 'Buscando dados do produto...';
-    status.className = 'hint loading';
-
-    scrapeTimer = setTimeout(async () => {
-      try {
-        const res = await fetch('/api/scrape?url=' + encodeURIComponent(url));
-        if (!res.ok) throw new Error('Falha ao buscar produto');
-        const dados = await res.json();
-        mostrarDados(dados);
-        status.textContent = '✓ Dados carregados — revise e confirme';
-        status.className = 'hint ok';
-      } catch (err) {
-        status.textContent = 'Não foi possível buscar automaticamente — preencha manualmente';
-        status.className = 'hint erro';
-        mostrarDados({ titulo: '', preco: '', precoAntigo: '', categoria: '' });
-      }
-    }, 800);
-  });
-
-  document.getElementById('form').addEventListener('submit', async (e) => {
-    e.preventDefault();
-    const btn = document.getElementById('btn');
-    const msg = document.getElementById('mensagem');
-    btn.disabled = true;
-    btn.textContent = 'Enviando...';
-    msg.className = '';
-    msg.style.display = 'none';
-
-    const body = {
-      driveLink:   document.getElementById('driveLink').value.trim(),
-      produtoLink: document.getElementById('produtoLink').value.trim(),
-      titulo:      document.getElementById('titulo').value.trim(),
-      preco:       document.getElementById('preco').value.trim(),
-      precoAntigo: document.getElementById('precoAntigo').value.trim(),
-      descricao:   document.getElementById('descricao').value.trim(),
-      categoria:   document.getElementById('categoria').value,
-    };
-
+  scrapeStatus.textContent = 'Buscando dados do produto...';
+  scrapeStatus.className = 'hint loading';
+  scrapeTimer = setTimeout(async () => {
     try {
-      const res  = await fetch('/api/publicar', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(body),
-      });
-      const data = await res.json();
-      if (res.ok && data.success) {
-        msg.textContent = `✅ ${data.mensagem} — ${data.dados.titulo}`;
-        msg.className = 'success';
-        e.target.reset();
-        ocultarDados();
-        atualizarBadge(null);
-        status.textContent = 'Mercado Livre, Amazon ou Shopee — dados serão buscados automaticamente';
-        status.className = 'hint';
-      } else {
-        msg.textContent = `❌ ${data.error || 'Erro desconhecido'}`;
-        msg.className = 'error';
-      }
-    } catch (err) {
-      msg.textContent = '❌ Falha na conexão com o servidor';
-      msg.className = 'error';
-    } finally {
-      btn.disabled = false;
-      btn.textContent = 'Adicionar à Fila';
+      const res   = await fetch('/api/scrape?url=' + encodeURIComponent(url));
+      if (!res.ok) throw new Error('Falha');
+      const dados = await res.json();
+      mostrarDados(dados);
+      scrapeStatus.textContent = '✓ Dados carregados — revise e confirme';
+      scrapeStatus.className = 'hint ok';
+    } catch {
+      scrapeStatus.textContent = 'Não foi possível buscar automaticamente — preencha manualmente';
+      scrapeStatus.className = 'hint erro';
+      mostrarDados({});
     }
-  });
+  }, 800);
+});
+
+document.getElementById('form').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const btn = document.getElementById('btn');
+  const msg = document.getElementById('mensagem');
+  btn.disabled = true; btn.textContent = 'Enviando...';
+  msg.className = ''; msg.style.display = 'none';
+  const body = {
+    driveLink:   document.getElementById('driveLink').value.trim(),
+    produtoLink: document.getElementById('produtoLink').value.trim(),
+    titulo:      document.getElementById('titulo').value.trim(),
+    preco:       document.getElementById('preco').value.trim(),
+    precoAntigo: document.getElementById('precoAntigo').value.trim(),
+    descricao:   document.getElementById('descricao').value.trim(),
+    categoria:   document.getElementById('categoria').value,
+  };
+  try {
+    const res  = await fetch('/api/publicar', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
+    const data = await res.json();
+    if (res.ok && data.success) {
+      msg.textContent = `✅ ${data.mensagem} — ${data.dados.titulo}`;
+      msg.className = 'success';
+      e.target.reset(); ocultarDados(); atualizarBadge(null);
+      scrapeStatus.textContent = 'Mercado Livre, Amazon ou Shopee — dados serão buscados automaticamente';
+      scrapeStatus.className = 'hint';
+    } else {
+      msg.textContent = `❌ ${data.error || 'Erro desconhecido'}`; msg.className = 'error';
+    }
+  } catch {
+    msg.textContent = '❌ Falha na conexão com o servidor'; msg.className = 'error';
+  } finally {
+    btn.disabled = false; btn.textContent = 'Adicionar à Fila';
+  }
+});
+
+// ── Utilitários ──────────────────────────────────────────────────────────────
+function fmtDate(iso) {
+  if (!iso) return '—';
+  return new Date(iso).toLocaleString('pt-BR', { timeZone: 'America/Sao_Paulo' });
+}
+function badgeStatus(s) {
+  const map = {
+    pendente:  '<span class="badge badge-pendente">🟡 Pendente</span>',
+    postado:   '<span class="badge badge-postado">✅ Postado</span>',
+    erro:      '<span class="badge badge-erro">❌ Erro</span>',
+    cancelado: '<span class="badge badge-cancelado">⊘ Cancelado</span>',
+  };
+  return map[(s||'').toLowerCase()] || `<span class="badge badge-cancelado">${s}</span>`;
+}
+function badgePlat(p) {
+  const style = { mercadolivre: 'background:#fef3c7;color:#92400e', amazon: 'background:#fde68a;color:#78350f', shopee: 'background:#fee2e2;color:#991b1b' };
+  const label = { mercadolivre: 'ML', amazon: 'AMZ', shopee: 'SHP' };
+  return `<span style="${style[p]||''};padding:2px 8px;border-radius:99px;font-size:.7rem;font-weight:600">${label[p]||p}</span>`;
+}
+function escHtml(s) { return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+
+// ── Status ───────────────────────────────────────────────────────────────────
+async function carregarStatus() {
+  const cards = document.getElementById('cardsStatus');
+  try {
+    const res = await fetch('/api/status');
+    const d   = await res.json();
+    const mkCard = (titulo, ok, texto, sub='') =>
+      `<div class="card">
+        <div class="card-titulo">${titulo}</div>
+        <div class="card-valor"><span class="dot ${ok?'dot-ok':'dot-erro'}"></span>${texto}</div>
+        ${sub?`<div class="card-sub">${sub}</div>`:''}
+      </div>`;
+    const vars   = d.variaveis || {};
+    const total  = Object.keys(vars).length;
+    const config = Object.values(vars).filter(Boolean).length;
+    cards.innerHTML =
+      mkCard('WhatsApp',       d.whatsapp?.ok, d.whatsapp?.ok?'Conectado':'Desconectado', d.whatsapp?.estado||d.whatsapp?.erro||'') +
+      mkCard('Planilha',       d.sheets?.ok,   d.sheets?.ok?'OK':'Erro',                  d.sheets?.erro||'') +
+      mkCard('Google Drive',   d.drive?.ok,    d.drive?.ok?'OK':'Erro',                   d.drive?.erro||'') +
+      `<div class="card" style="cursor:pointer" onclick="toggleVars()">
+        <div class="card-titulo">Variáveis de Ambiente</div>
+        <div class="card-valor"><span class="dot ${config===total?'dot-ok':'dot-wait'}"></span>${config}/${total} configuradas</div>
+        <div class="vars-lista" id="varsLista">${Object.entries(vars).map(([k,v])=>
+          `<div class="var-item"><span class="${v?'ok':'nok'}">${v?'✓':'✗'}</span>${k}</div>`).join('')}
+        </div>
+      </div>`;
+  } catch (err) {
+    cards.innerHTML = `<div class="vazio">Erro: ${err.message}</div>`;
+  }
+}
+function toggleVars() { document.getElementById('varsLista')?.classList.toggle('aberta'); }
+
+async function testarWhatsApp() {
+  const btn = document.getElementById('btnTestarWA');
+  const al  = document.getElementById('alertaWA');
+  btn.disabled = true; btn.textContent = 'Enviando...'; al.className = 'alerta';
+  try {
+    const res = await fetch('/api/whatsapp/teste', { method:'POST', headers:{'Content-Type':'application/json'}, body:'{}' });
+    const d   = await res.json();
+    al.textContent = res.ok ? '✅ Mensagem de teste enviada no grupo!' : `❌ ${d.error}`;
+    al.className = res.ok ? 'alerta success' : 'alerta error';
+  } catch (err) { al.textContent = `❌ ${err.message}`; al.className = 'alerta error'; }
+  finally { btn.disabled = false; btn.textContent = 'Testar WhatsApp'; }
+}
+
+async function listarGrupos() {
+  const btn = document.getElementById('btnGrupos');
+  const div = document.getElementById('tabelaGrupos');
+  btn.disabled = true; btn.textContent = 'Carregando...';
+  try {
+    const res    = await fetch('/api/whatsapp/grupos');
+    const grupos = await res.json();
+    const lista  = Array.isArray(grupos) ? grupos : (grupos?.data || []);
+    div.innerHTML = lista.length
+      ? `<div class="tabela-wrap" style="margin-top:.75rem"><table>
+          <thead><tr><th>Nome</th><th>ID (WHATSAPP_GROUP_ID)</th><th>Participantes</th></tr></thead>
+          <tbody>${lista.map(g=>`<tr>
+            <td>${g.subject||g.name||'—'}</td>
+            <td><code style="font-size:.76rem;color:#a5b4fc">${g.id}</code></td>
+            <td>${g.size||'—'}</td></tr>`).join('')}
+          </tbody></table></div>`
+      : '<p style="color:#64748b;font-size:.875rem;margin-top:.75rem">Nenhum grupo encontrado.</p>';
+    div.style.display = 'block';
+  } catch (err) {
+    div.innerHTML = `<p style="color:#f87171;font-size:.875rem;margin-top:.75rem">Erro: ${err.message}</p>`;
+    div.style.display = 'block';
+  } finally { btn.disabled = false; btn.textContent = 'Listar grupos'; }
+}
+
+// ── Fila ─────────────────────────────────────────────────────────────────────
+let filtroAtivo = '';
+document.querySelectorAll('.filtro').forEach(f => f.addEventListener('click', () => {
+  document.querySelectorAll('.filtro').forEach(x => x.classList.remove('ativo'));
+  f.classList.add('ativo'); filtroAtivo = f.dataset.filtro; carregarFila();
+}));
+
+async function carregarFila() {
+  const div = document.getElementById('tabelaFila');
+  div.innerHTML = '<p style="color:#64748b;padding:1rem">Carregando...</p>';
+  try {
+    const url    = '/api/fila' + (filtroAtivo ? `?status=${encodeURIComponent(filtroAtivo)}` : '');
+    const videos = await (await fetch(url)).json();
+    if (!videos.length) { div.innerHTML = '<div class="vazio">Nenhum vídeo encontrado.</div>'; return; }
+    div.innerHTML = `<div class="tabela-wrap"><table>
+      <thead><tr><th>#</th><th>Produto</th><th>Plat.</th><th>Preço</th><th>Status</th><th>YouTube</th><th>Data</th><th>Ações</th></tr></thead>
+      <tbody>${videos.map(v => `<tr>
+        <td style="color:#475569">${v.rowIndex}</td>
+        <td class="truncate" title="${v.titulo}">${v.titulo||'—'}</td>
+        <td>${badgePlat(v.plataforma)}</td>
+        <td style="white-space:nowrap">${v.preco||'—'}</td>
+        <td>${badgeStatus(v.status)}</td>
+        <td>${v.linkYoutube?`<a href="${v.linkYoutube}" target="_blank" style="color:#818cf8;font-size:.76rem">▶ ver</a>`:'—'}</td>
+        <td style="white-space:nowrap;color:#475569;font-size:.74rem">${v.dataPublicacao?v.dataPublicacao.split(' ')[0]:'—'}</td>
+        <td>${acoesFila(v)}</td></tr>`).join('')}
+      </tbody></table></div>`;
+  } catch (err) { div.innerHTML = `<div class="vazio">Erro: ${err.message}</div>`; }
+}
+function acoesFila(v) {
+  const s = (v.status||'').toLowerCase();
+  if (s === 'pendente') return `<button class="btn btn-danger btn-sm" onclick="cancelarVideo(${v.rowIndex})">Cancelar</button>`;
+  if (s === 'erro')     return `<button class="btn btn-warning btn-sm" onclick="reprocessarVideo(${v.rowIndex})">Reprocessar</button>`;
+  return '';
+}
+async function cancelarVideo(r) {
+  if (!confirm(`Cancelar vídeo da linha ${r}?`)) return;
+  await fetch(`/api/fila/${r}`, { method:'DELETE' }).catch(e => alert(e.message));
+  carregarFila();
+}
+async function reprocessarVideo(r) {
+  if (!confirm(`Reprocessar linha ${r}? Voltará para Pendente.`)) return;
+  await fetch(`/api/fila/${r}/reprocessar`, { method:'POST' }).catch(e => alert(e.message));
+  carregarFila();
+}
+
+// ── Automação ────────────────────────────────────────────────────────────────
+let cronPoll = null;
+async function carregarCron() {
+  try {
+    const d = await (await fetch('/api/cron/estado')).json();
+    document.getElementById('cronEstado').innerHTML = d.rodando
+      ? `<span class="dot dot-wait"></span> ⚙️ Processando...`
+      : `<span class="dot dot-ok"></span> Aguardando`;
+    document.getElementById('cronUltima').textContent   = fmtDate(d.ultimaExecucao);
+    document.getElementById('cronProxima').textContent  = fmtDate(d.proximaExecucao);
+    document.getElementById('cronResultado').textContent = d.ultimoResultado
+      ? `${d.ultimoResultado.processados} processados, ${d.ultimoResultado.erros} erros` : '—';
+    const btn = document.getElementById('btnDisparar');
+    btn.disabled    = d.rodando;
+    btn.textContent = d.rodando ? '⚙️ Em execução...' : '▶ Executar Agora';
+    if (d.rodando && !cronPoll) cronPoll = setInterval(carregarCron, 5000);
+    else if (!d.rodando && cronPoll) { clearInterval(cronPoll); cronPoll = null; }
+  } catch {}
+}
+async function dispararCron() {
+  const btn = document.getElementById('btnDisparar');
+  const al  = document.getElementById('alertaCron');
+  btn.disabled = true; al.className = 'alerta';
+  try {
+    const d = await (await fetch('/api/cron/disparar', { method:'POST' })).json();
+    if (d.iniciado) {
+      al.textContent = '✅ Ciclo iniciado! Acompanhe na aba Logs.'; al.className = 'alerta success';
+      cronPoll = setInterval(carregarCron, 5000); carregarCron();
+    } else {
+      al.textContent = `⚠️ ${d.motivo}`; al.className = 'alerta error'; btn.disabled = false;
+    }
+  } catch (err) { al.textContent = `❌ ${err.message}`; al.className = 'alerta error'; btn.disabled = false; }
+}
+
+// ── Logs ─────────────────────────────────────────────────────────────────────
+let logsPoll = null;
+async function carregarLogs() {
+  const area = document.getElementById('logArea');
+  try {
+    const d      = await (await fetch('/api/logs?linhas=200')).json();
+    const linhas = d.linhas || [];
+    if (!linhas.length) { area.textContent = 'Sem logs ainda.'; return; }
+    area.innerHTML = linhas.map(l => {
+      const cls = l.includes('❌')||l.includes('Erro') ? 'err'
+                : l.includes('✅')||l.includes('Concluído') ? 'ok'
+                : l.includes('⚠️') ? 'warn' : '';
+      return cls ? `<span class="${cls}">${escHtml(l)}</span>` : escHtml(l);
+    }).join('\n');
+    area.scrollTop = area.scrollHeight;
+  } catch (err) { area.textContent = 'Erro: ' + err.message; }
+}
+function toggleAutoLogs() {
+  const on = document.getElementById('autoLogs').checked;
+  if (on) logsPoll = setInterval(carregarLogs, 10000);
+  else { clearInterval(logsPoll); logsPoll = null; }
+}
 </script>
 </body>
 </html>
