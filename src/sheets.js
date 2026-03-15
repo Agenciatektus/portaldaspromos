@@ -147,4 +147,67 @@ async function inserirNaFila(dados) {
   console.log(`[Sheets] Vídeo inserido na fila: ${titulo}`);
 }
 
-module.exports = { getPendingVideos, markAsPublished, markAsError, calcularDesconto, inserirNaFila };
+/**
+ * Retorna TODAS as linhas da aba Vídeos (todos os status)
+ * @returns {Promise<Array>}
+ */
+async function getAllVideos() {
+  const sheets = await getSheetsClient();
+  const res = await sheets.spreadsheets.values.get({
+    spreadsheetId: SPREADSHEET_ID,
+    range: 'Vídeos!A2:N1000',
+  });
+  const rows = res.data.values || [];
+  return rows
+    .map((row, i) => ({
+      rowIndex:       i + 2,
+      nomeArquivo:    row[COL.NOME_ARQUIVO]    || '',
+      linkDrive:      row[COL.LINK_DRIVE]      || '',
+      linkProduto:    row[COL.LINK_PRODUTO]    || '',
+      titulo:         row[COL.TITULO_PRODUTO]  || '',
+      preco:          row[COL.PRECO]           || '',
+      precoAntigo:    row[COL.PRECO_ANTIGO]    || '',
+      linkAfiliado:   row[COL.LINK_AFILIADO]   || '',
+      plataforma:     row[COL.PLATAFORMA]      || '',
+      categoria:      row[COL.CATEGORIA]       || '',
+      status:         row[COL.STATUS]          || '',
+      linkYoutube:    row[COL.LINK_YOUTUBE]    || '',
+      dataPublicacao: row[COL.DATA_PUBLICACAO] || '',
+      tituloYoutube:  row[COL.TITULO_YOUTUBE]  || '',
+      descricao:      row[COL.DESCRICAO]       || '',
+    }))
+    .filter(v => v.titulo || v.nomeArquivo); // ignora linhas completamente vazias
+}
+
+/**
+ * Marca uma linha como Cancelado
+ * @param {number} rowIndex
+ */
+async function cancelarVideo(rowIndex) {
+  const sheets = await getSheetsClient();
+  await sheets.spreadsheets.values.update({
+    spreadsheetId: SPREADSHEET_ID,
+    range: `Vídeos!J${rowIndex}`,
+    valueInputOption: 'USER_ENTERED',
+    requestBody: { values: [['Cancelado']] },
+  });
+  console.log(`[Sheets] Linha ${rowIndex} cancelada`);
+}
+
+/**
+ * Reprocessa uma linha: volta para Pendente e limpa campos de publicação
+ * @param {number} rowIndex
+ */
+async function reprocessarVideo(rowIndex) {
+  const sheets = await getSheetsClient();
+  // Limpa J (STATUS), K (LINK_YOUTUBE), L (DATA_PUBLICACAO), M (TITULO_YOUTUBE)
+  await sheets.spreadsheets.values.update({
+    spreadsheetId: SPREADSHEET_ID,
+    range: `Vídeos!J${rowIndex}:M${rowIndex}`,
+    valueInputOption: 'USER_ENTERED',
+    requestBody: { values: [['Pendente', '', '', '']] },
+  });
+  console.log(`[Sheets] Linha ${rowIndex} marcada para reprocessamento`);
+}
+
+module.exports = { getPendingVideos, getAllVideos, markAsPublished, markAsError, calcularDesconto, inserirNaFila, cancelarVideo, reprocessarVideo };

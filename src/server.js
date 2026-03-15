@@ -1,9 +1,13 @@
 require('dotenv').config();
 const express = require('express');
+const fs = require('fs');
 const path = require('path');
 const { detectarPlataforma, scrapeProduto } = require('./scraper');
 const { gerarLink } = require('./affiliate');
-const { inserirNaFila } = require('./sheets');
+const { inserirNaFila, getAllVideos, cancelarVideo, reprocessarVideo } = require('./sheets');
+const { listNewVideos } = require('./drive');
+const { checkConnection, listGroups, sendGroupMessage } = require('./whatsapp');
+const { getPendingVideos } = require('./sheets');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -119,6 +123,143 @@ app.post('/api/publicar', async (req, res) => {
     dados: { titulo, preco, linkAfiliado, plataforma },
   });
 });
+
+// ─── Rota do painel ─────────────────────────────────────────────────────────
+
+app.get('/painel', (req, res) => {
+  res.sendFile(path.join(__dirname, '..', 'public', 'painel.html'));
+});
+
+// ─── API — Fila ───────────────────────────────────────────────────────────────
+
+app.get('/api/fila', async (req, res) => {
+  try {
+    const todos = await getAllVideos();
+    const { status } = req.query;
+    const lista = status
+      ? todos.filter(v => v.status.toLowerCase() === status.toLowerCase())
+      : todos;
+    return res.json(lista);
+  } catch (err) {
+    return res.status(500).json({ error: err.message });
+  }
+});
+
+app.post('/api/fila/:rowIndex/reprocessar', async (req, res) => {
+  try {
+    await reprocessarVideo(parseInt(req.params.rowIndex, 10));
+    return res.json({ ok: true });
+  } catch (err) {
+    return res.status(500).json({ error: err.message });
+  }
+});
+
+app.delete('/api/fila/:rowIndex', async (req, res) => {
+  try {
+    await cancelarVideo(parseInt(req.params.rowIndex, 10));
+    return res.json({ ok: true });
+  } catch (err) {
+    return res.status(500).json({ error: err.message });
+  }
+});
+
+// ─── API — Status das integrações ────────────────────────────────────────────
+
+const VARS_OBRIGATORIAS = [
+  'GOOGLE_CLIENT_ID', 'GOOGLE_CLIENT_SECRET',
+  'YOUTUBE_REFRESH_TOKEN', 'DRIVE_REFRESH_TOKEN',
+  'SPREADSHEET_ID', 'EVOLUTION_API_URL', 'EVOLUTION_API_KEY',
+  'WHATSAPP_INSTANCE', 'WHATSAPP_GROUP_ID',
+];
+const VARS_AFILIADO = [
+  'ML_AFFILIATE_COOKIE', 'ML_AFFILIATE_TAG',
+  'AMAZON_AFFILIATE_COOKIE', 'SHOPEE_APP_ID', 'SHOPEE_SECRET',
+];
+
+app.get('/api/status', async (req, res) => {
+  const [whatsappRes, sheetsRes, driveRes] = await Promise.allSettled([
+    checkConnection(),
+    getPendingVideos(),
+    listNewVideos(),
+  ]);
+
+  const variaveis = {};
+  [...VARS_OBRIGATORIAS, ...VARS_AFILIADO].forEach(v => {
+    variaveis[v] = !!process.env[v];
+  });
+
+  return res.json({
+    whatsapp: whatsappRes.status === 'fulfilled'
+      ? { ok: true, estado: whatsappRes.value?.instance?.state || 'open' }
+      : { ok: false, erro: whatsappRes.reason?.message },
+    sheets: sheetsRes.status === 'fulfilled'
+      ? { ok: true }
+      : { ok: false, erro: sheetsRes.reason?.message },
+    drive: driveRes.status === 'fulfilled'
+      ? { ok: true }
+      : { ok: false, erro: driveRes.reason?.message },
+    variaveis,
+  });
+});
+
+// ─── API — Cron ───────────────────────────────────────────────────────────────
+
+// Importação lazy para evitar circular no momento do require
+function getAutomation() {
+  return require('./automation');
+}
+
+app.get('/api/cron/estado', (req, res) => {
+  const { estado } = getAutomation();
+  return res.json(estado);
+});
+
+app.post('/api/cron/disparar', (req, res) => {
+  const { estado, executarCiclo } = getAutomation();
+  if (estado.rodando) {
+    return res.json({ iniciado: false, motivo: 'Já em execução' });
+  }
+  executarCiclo(); // fire-and-forget
+  return res.json({ iniciado: true });
+});
+
+// ─── API — Logs ───────────────────────────────────────────────────────────────
+
+app.get('/api/logs', (req, res) => {
+  const logPath = path.join(__dirname, '..', 'logs', 'app.log');
+  const linhas = parseInt(req.query.linhas || '200', 10);
+  try {
+    if (!fs.existsSync(logPath)) return res.json({ linhas: [] });
+    const conteudo = fs.readFileSync(logPath, 'utf8');
+    const todas = conteudo.split('\n').filter(Boolean);
+    return res.json({ linhas: todas.slice(-linhas) });
+  } catch (err) {
+    return res.status(500).json({ error: err.message });
+  }
+});
+
+// ─── API — WhatsApp ───────────────────────────────────────────────────────────
+
+app.get('/api/whatsapp/grupos', async (req, res) => {
+  try {
+    const grupos = await listGroups();
+    return res.json(grupos);
+  } catch (err) {
+    return res.status(500).json({ error: err.message });
+  }
+});
+
+app.post('/api/whatsapp/teste', async (req, res) => {
+  const mensagem = req.body?.mensagem || '✅ Teste de conexão do Portal de Promos';
+  try {
+    await sendGroupMessage(mensagem);
+    return res.json({ ok: true });
+  } catch (err) {
+    return res.status(500).json({ error: err.message });
+  }
+});
+
+// ─── Server ───────────────────────────────────────────────────────────────────
 
 function startServer() {
   app.listen(PORT, () => {
